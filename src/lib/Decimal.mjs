@@ -1,5 +1,23 @@
+if (!String.prototype.padStart) {
+	String.prototype.padStart = function padStart(targetLength,padString) {
+		targetLength = targetLength>>0; //truncate if number or convert non-number to 0;
+		padString = String((typeof padString !== 'undefined' ? padString : ' '));
+		if (this.length > targetLength) {
+			return String(this);
+		}
+		else {
+			targetLength = targetLength-this.length;
+			if (targetLength > padString.length) {
+				padString += padString.repeat(targetLength/padString.length); //append to original to ensure we are longer than needed
+			}
+			return padString.slice(0,targetLength) + String(this);
+		}
+	};
+}
+
 export default class Decimal {
-	#i,#e;
+	#i;
+	#e;
 
 	constructor(i,e)
 	{
@@ -14,33 +32,43 @@ export default class Decimal {
 		this.#e = e		
 	}
 
-	from(i, e=null)
+	static from(i, e=0)
 	{
 		if (i instanceof Decimal) {
 			return i
 		}
-		let oi = i, oe = e;
+		let oi = i
 		if (typeof i === 'string') {
-			e = -1 * i.substring(i.indexOf('.')).length
+			if (i.indexOf('.')!==-1) {
+				e = -1 * i.substring(i.indexOf('.')+1).length
+			} else {
+				e = 0
+			}
 			i = parseInt(i.replace(/[,.]/g, ''))
-		} else {
-			i = parseInt(i + '' + e)
-			e = -1 * (''+e).length
 		}
 		if (isNaN(i)) {
 			throw new TypeError(oi+' is not a number')
+		}
+		if (isNaN(e)) {
+			throw new TypeError(e+' is not a number')
 		}
 		return new Decimal(i, e)
 	}
 
 	toJSON()
 	{
-		return '"' + Math.floor(this.#i * Math.pow(10,this.#e)) + '.' + (this.#i % Math.pow(10,-this.#e)) +'"'
+		return '"'+this.toString()+'"'
 	}
 
 	toTSON()
 	{
 		return '<decimal>'+this.toJSON()
+	}
+
+	toString()
+	{
+		let d = ''+(this.#i % Math.pow(10,-this.#e))
+		return Math.floor(this.#i * Math.pow(10,this.#e)) + '.' + d.padStart(-this.#e, '0')
 	}
 
 	toExp()
@@ -51,21 +79,22 @@ export default class Decimal {
 	multiplyWith(n)
 	{
 		n = Decimal.from(n)
-		let { ni, ne } = n.toExp()
+		let [ ni, ne ] = n.toExp()
 		return new Decimal( this.#i * ni, this.#e + ne )
 	}
 
 	divideBy(n)
 	{
 		n = Decimal.from(n)
-		let { ni, ne} = n.toExp()
+		let [ ni, ne ] = n.toExp()
 		return new Decimal( this.#i / ni, this.#e - ne)
 	}
 
 	add(n)
 	{
 		n = Decimal.from(n)
-		let {ni, ne} = n.toExp()
+		let [ ni, ne ] = n.toExp()
+		console.log(''+n,ni,ne)
 		if (ne<this.#e) {
 			ni = Math.pow(10, (this.#e - ne)) * ni
 			return new Decimal(this.#i + ni, this.#e)
@@ -80,7 +109,7 @@ export default class Decimal {
 	subtract(n)
 	{
 		n = Decimal.from(n)
-		let {ni, ne} = n.toExp()
+		let [ ni, ne ] = n.toExp()
 		if (ne<this.#e) {
 			ni = Math.pow(10, (this.#e - ne)) * ni
 			return new Decimal(this.#i - ni, this.#e)
@@ -95,7 +124,7 @@ export default class Decimal {
 	compareWith(n)
 	{
 		n = Decimal.from(n)
-		let {ni,ne} = n.toExp()
+		let [ ni, ne ] = n.toExp()
 		if (ne<this.#e) {
 			return -1
 		}
@@ -128,6 +157,6 @@ export default class Decimal {
 
 	toPrecision(e)
 	{
-		
+		console.log('nyi', e)
 	}
 }
