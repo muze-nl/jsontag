@@ -1,3 +1,5 @@
+import TSONType from './TSONType.mjs'
+
 if (!String.prototype.padStart) {
 	String.prototype.padStart = function padStart(targetLength,padString) {
 		targetLength = targetLength>>0; //truncate if number or convert non-number to 0;
@@ -15,12 +17,13 @@ if (!String.prototype.padStart) {
 	};
 }
 
-export default class Decimal {
+export default class Decimal extends TSONType {
 	#i;
 	#e;
 
 	constructor(i,e)
 	{
+		super()
 		if (isNaN(i)) {
 			throw new TypeError(i+' is not a number')
 		}
