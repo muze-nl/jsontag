@@ -1,5 +1,5 @@
 import TSONType from './TSONType.mjs'
-import TSON from '../TSON.mjs'
+import { encodeProperties } from './functions.mjs'
 
 export default class TSONObject extends TSONType {
 
@@ -7,7 +7,7 @@ export default class TSONObject extends TSONType {
 	{
 		super()
 	}
-	
+
 	toJSON()
 	{
 		return JSON.stringify(this)
@@ -38,6 +38,6 @@ export default class TSONObject extends TSONType {
 				list.push(attrs)
 			}
 		}
-		return '<'+list.join(' ')+'>{'+TSON.encodeProperties(this)+'}'
+		return '<'+list.join(' ')+'>{'+encodeProperties(this)+'}'
 	}
 }

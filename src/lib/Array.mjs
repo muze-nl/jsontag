@@ -1,5 +1,5 @@
 import TSONType from './TSONType.mjs'
-import TSON from '../TSON.mjs'
+import { encodeEntries } from './functions.mjs'
 
 export default class TSONArray extends Array {
 
@@ -22,7 +22,7 @@ export default class TSONArray extends Array {
 		if (attrs) {
 			list.push(attrs)
 		}
-		return '<'+list.join(' ')+'>['+TSON.encodeEntries(this)+']'
+		return '<'+list.join(' ')+'>['+encodeEntries(this)+']'
 	}
 
 	setAttribute(attr, value)
@@ -74,7 +74,7 @@ export default class TSONArray extends Array {
 		}
 	}
 
-	getAttributes()
+		getAttributes()
 	{
 		return JSON.parse(JSON.stringify(this.#attributes))
 	}
