@@ -14,10 +14,19 @@ tap.test('Properties', t => {
 	t.end()
 })
 
-tap.test('Attributes', t => {
+tap.test('Class', t => {
 	let d = new TSONObject()
 	d.setAttribute('class','Person')
 	d.name = 'John'
-	t.equal(d.toTSON(), '<object class="Person">{"name":"John"}')
+	t.equal(d.toTSON(), '<Person>{"name":"John"}')
+	t.end()
+})
+
+tap.test('Class2', t => {
+	let d = new TSONObject()
+	d.setAttribute('class','Person')
+	d.addAttribute('class','User')
+	d.name = 'John'
+	t.equal(d.toTSON(), '<object class="Person User">{"name":"John"}')
 	t.end()
 })

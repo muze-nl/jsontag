@@ -39,7 +39,7 @@ export default class TSONType {
 			} else {
 				value = [ value ]
 			}
-			this.#attributes[attr] = this.#attributes.concat(value)
+			this.#attributes[attr] = this.#attributes[attr].concat(value)
 		}
 	}
 
@@ -48,6 +48,11 @@ export default class TSONType {
 		if ( typeof this.#attributes[attr] !== 'undefined') {
 			delete this.#attributes[attr]
 		}
+	}
+
+	getAttributes()
+	{
+		return JSON.parse(JSON.stringify(this.#attributes))
 	}
 
 	getAttributesString()
