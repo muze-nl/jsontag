@@ -1,7 +1,7 @@
 import TSONType from './TSONType.mjs'
 import TSON from '../TSON.mjs'
 
-export default class Object extends TSONType {
+export default class TSONObject extends TSONType {
 	toJSON()
 	{
 		return JSON.stringify(this)
