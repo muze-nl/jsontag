@@ -1,4 +1,4 @@
-import { Decimal } from './Decimal.mjs'
+import Decimal from './Decimal.mjs'
 
 export default class Money {
 
@@ -32,7 +32,7 @@ export default class Money {
 				if (!(i instanceof Decimal)) {
 					i = Decimal.from(i,e)
 				}
-				{i, e} = i.toExp()
+				[ i, e ] = i.toExp()
 			}
 		}
 		return new Money(c, i, e)
@@ -48,6 +48,12 @@ export default class Money {
 		return '<decimal>'+this.toJSON()
 	}
 
+	toString()
+	{
+		let d = ''+(this.#i % Math.pow(10,-this.#e))
+		return this.#c + '$' + Math.floor(this.#i * Math.pow(10,this.#e)) + '.' + d.padStart(-this.#e, '0')
+	}
+
 	toExp()
 	{
 		return [this.#i, this.#e]
@@ -56,14 +62,14 @@ export default class Money {
 	multiplyWith(n)
 	{
 		n = Decimal.from(n)
-		let { ni, ne } = n.toExp()
+		let [ ni, ne ] = n.toExp()
 		return new Money( this.#c, this.#i * ni, this.#e + ne )
 	}
 
 	divideBy(n)
 	{
 		n = Decimal.from(n)
-		let { ni, ne} = n.toExp()
+		let [ ni, ne ] = n.toExp()
 		return new Money( this.#c, this.#i / ni, this.#e - ne)
 	}
 
@@ -73,7 +79,7 @@ export default class Money {
 		if (n.getCurrency()!==this.#c) {
 			throw new TypeError('You cannot add different curreency values')
 		}
-		let {ni, ne} = n.toExp()
+		let [ ni, ne ] = n.toExp()
 		if (ne<this.#e) {
 			ni = Math.pow(10, (this.#e - ne)) * ni
 			return new Money(this.#c, this.#i + ni, this.#e)
@@ -91,7 +97,7 @@ export default class Money {
 		if (n.getCurrency()!==this.#c) {
 			throw new TypeError('You cannot subtract different currency values')
 		}
-		let {ni, ne} = n.toExp()
+		let [ ni, ne ] = n.toExp()
 		if (ne<this.#e) {
 			ni = Math.pow(10, (this.#e - ne)) * ni
 			return new Decimal(this.#i - ni, this.#e)
@@ -109,7 +115,7 @@ export default class Money {
 		if (n.getCurrency()!==this.#c) {
 			throw new TypeError('You cannot compare different currency values')
 		}
-		let {ni,ne} = n.toExp()
+		let [ ni, ne ] = n.toExp()
 		if (ne<this.#e) {
 			return -1
 		}

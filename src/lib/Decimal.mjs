@@ -24,10 +24,6 @@ export default class Decimal {
 		if (isNaN(i)) {
 			throw new TypeError(i+' is not a number')
 		}
-		if (e==0) {
-			e = -2;
-			i = 100 * i;
-		}
 		this.#i = i
 		this.#e = e		
 	}
@@ -65,10 +61,39 @@ export default class Decimal {
 		return '<decimal>'+this.toJSON()
 	}
 
+	hoist(a,b)
+	{
+		a = Decimal.from(a)
+		b = Decimal.from(b)
+		let [ ai, ae ] = a.toExp()
+		let [ bi, be ] = b.toExp()
+		if (be<ae) {
+			ai = ''+ai
+			ai = parseInt(ai + '0'.repeat(ae - be))
+			return [ new Decimal(ai, be), b ]
+		} else if (be>ae) {
+			bi = ''+bi
+			bi = parseInt(bi + '0'.repeat(be - ae))
+			return [ a, new Decimal(bi, ae)]
+		} else {
+			return [ a, b ]
+		}			
+	}
+
 	toString()
 	{
-		let d = ''+(this.#i % Math.pow(10,-this.#e))
-		return Math.floor(this.#i * Math.pow(10,this.#e)) + '.' + d.padStart(-this.#e, '0')
+		//let d = ''+(this.#i % Math.pow(10,-this.#e))
+		// can't do #i * Math.pow(10,this.#e), as it turns #i into a float and loses precision
+		let s = ''+this.#i
+		let d = ''
+		if (this.#e<0) {
+			d = s.substring(s.length+this.#e)
+			s = s.substring(0, s.length+this.#e)
+		} else {
+			d = ''
+			s = s + '0'.repeat(this.#e)
+		}
+		return s + (d ? '.' + d.padStart(-this.#e, '0') : '')
 	}
 
 	toExp()
@@ -92,52 +117,33 @@ export default class Decimal {
 
 	add(n)
 	{
-		n = Decimal.from(n)
-		let [ ni, ne ] = n.toExp()
-		console.log(''+n,ni,ne)
-		if (ne<this.#e) {
-			ni = Math.pow(10, (this.#e - ne)) * ni
-			return new Decimal(this.#i + ni, this.#e)
-		} else if (ne>this.#e) {
-			let i = Math.pow(10, (ne - this.#e)) * this.#i
-			return new Decimal(i + ni, ne)
-		} else {
-			return new Decimal(ni + this.#i, this.#e)
-		}
+		let [ t,  nn ] = this.hoist(this, n)
+		let [ ti, te ] = t.toExp()
+		let [ ni, ne ] = nn.toExp()
+		return new Decimal(ti + ni, te)
 	}
 
 	subtract(n)
 	{
-		n = Decimal.from(n)
-		let [ ni, ne ] = n.toExp()
-		if (ne<this.#e) {
-			ni = Math.pow(10, (this.#e - ne)) * ni
-			return new Decimal(this.#i - ni, this.#e)
-		} else if (ne>this.#e) {
-			let i = Math.pow(10, (ne - this.#e)) * this.#i
-			return new Decimal(i - ni, ne)
-		} else {
-			return new Decimal(this.#i - ni, this.#e)
-		}
+		let [ t,  nn ] = this.hoist(this, n)
+		let [ ti, te ] = t.toExp()
+		let [ ni, ne ] = nn.toExp()
+		return new Decimal(ti - ni, te)
 	}
 
 	compareWith(n)
 	{
-		n = Decimal.from(n)
-		let [ ni, ne ] = n.toExp()
-		if (ne<this.#e) {
+		let [ t,  nn ] = this.hoist(this, n)
+		let [ ti, te ] = t.toExp()
+		let [ ni, ne ] = nn.toExp()
+		let d = ti - ni
+		if (d<0) {
 			return -1
-		}
-		if (ne>this.#e) {
+		} else if (d>0) {
 			return 1
+		} else {
+			return 0
 		}
-		if (ni<this.#i) {
-			return -1
-		}
-		if (ni>this.#i) {
-			return 1
-		}
-		return 0
 	}
 
 	isLessThan(n)
