@@ -53,7 +53,11 @@ export default class TSONType {
 	getAttributesString()
 	{
 		return Object.keys(this.#attributes).map(attr => {
-			return attr+'="'+(this.#attributes[attr].join(' '))+'"'
+			let attrValue = this.#attributes[attr]
+			if (Array.isArray(attrValue)) {
+				attrValue = attrValue.join(' ')
+			}	
+			return attr+'="'+attrValue+'"'
 		}).join(' ')
 	}
 }

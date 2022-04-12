@@ -13,3 +13,11 @@ tap.test('Properties', t => {
 	t.equal(d.toTSON(), '<object>{"foo":"Bar"}')
 	t.end()
 })
+
+tap.test('Attributes', t => {
+	let d = new TSONObject()
+	d.setAttribute('class','Person')
+	d.name = 'John'
+	t.equal(d.toTSON(), '<object class="Person">{"name":"John"}')
+	t.end()
+})
