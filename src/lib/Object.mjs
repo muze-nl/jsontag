@@ -2,6 +2,12 @@ import TSONType from './TSONType.mjs'
 import TSON from '../TSON.mjs'
 
 export default class TSONObject extends TSONType {
+
+	constructor()
+	{
+		super()
+	}
+	
 	toJSON()
 	{
 		return JSON.stringify(this)

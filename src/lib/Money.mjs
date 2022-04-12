@@ -3,7 +3,9 @@ import TSONType from './TSONType.mjs'
 
 export default class Money extends TSONType {
 
-	var #c, #i, #e;
+	#c; 
+	#i; 
+	#e;
 
 	constructor(c, i, e=null)
 	{

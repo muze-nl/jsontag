@@ -1,9 +1,21 @@
-import TSONObject from './lib/Object.mjs'
 import TSONType from './lib/TSONType.mjs'
+import UUID from './lib/UUID.mjs'
+import Decimal from './lib/Decimal.mjs'
+import Money from './lib/Money.mjs'
+import TSONArray from './lib/Array.mjs'
+import TSONObject from './lib/Object.mjs'
 
 export default class TSON 
 {
-	
+
+	static {
+		TSON.UUID = UUID
+		TSON.Decimal = Decimal
+		TSON.Money = Money
+//		TSON["Object"] = TSONObject
+//		TSON.Array = TSONArray
+	}
+
 	static stringify(value)
 	{
 		if (value instanceof TSONType) {
