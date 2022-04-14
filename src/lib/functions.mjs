@@ -32,6 +32,19 @@ export const encodeEntries = arr => {
 	}).join(',')
 }
 
+const typeInfo = new WeakMap()
+
+export const getType = (obj) => {
+	if (typeInfo.has(obj)) {
+		let info = typeInfo.get(obj)
+		if (info.type) {
+			console.log(info.type)
+			return info.type
+		}
+	}
+	return typeof obj
+}
+
 export const parse = (text) => {
 	// adapted from https://github.com/jwmerrill/ohm-grammar-json/
 
@@ -39,24 +52,36 @@ export const parse = (text) => {
 TSON {
   Start = Value
 
-  Value = 
-  	Type? 
-    ( Object
-    | Array
-    | String
-    | Number
-    | True
-    | False
-    | Null )
+  Value =  
+    ( ObjectType? Object
+    | Type? Array
+    | Type? String
+    | Type? Number
+    | Type? True
+    | Type? False
+    | Type? Null 
+  )
 
   Type = 
-  	"<" Name Attributes? ">"
+  	"<" TypeName Attributes ">"
+
+  TypeName = 
+    "array" | "string" | "number" | "boolean" | "decimal" | "money" | "uuid" | "link" 
+
+  ObjectType = 
+    "<" ObjectName Attributes ">"
+
+  ObjectName = 
+  	"object" -- default
+  	| upperCaseLetter alnum* -- class
+
+  upperCaseLetter = "A".."Z"
 
   Name =
   	letter alnum*
 
   Attributes =
-  	Attribute+
+  	Attribute*
 
   Attribute =
   	Name "=" stringLiteral
@@ -128,9 +153,87 @@ TSON {
 }
 	`)
 
+
+
 	const actions = {
 		Value: function(t, v) {
-			return v.parse();
+			let tsonType = {};
+			if (t.children[0]) {
+				tsonType = t.children[0].parse()
+			}
+			let value = v.parse()
+			if (tsonType?.type || tsonType?.attributes) {
+				if (typeof value === "string") {
+					//FIXME: toJSON of String() is not the same as a string
+					//So maybe make a TSONString?
+					value = new String(value)
+				}
+				if (typeof value === "number") {
+					value = new Number(value)
+				}
+				if (typeof value === "boolean") {
+					value = new Boolean(value)
+				}
+				//FIXME: null... is an object, but all nulls are the same object...
+				typeInfo.set(value, tsonType)
+			}
+			return value
+		},
+		Type: function(_1, n, a, _2) {
+			let meta = {}
+			let type = n.parse()
+			if (type) {
+				meta.type = type
+			}
+			let attributes = a.parse()
+			if (attributes) {
+				meta.attributes = attributes
+			}
+			return meta
+		},
+		ObjectType: function(_1, n, a, _2) {
+			let meta = {}
+			let type = n.parse()
+			if (type) {
+				if (type[0]==type[0].toUpperCase()) {
+					meta.type = 'object'
+					meta.attributes = {
+						"class": type
+					}
+				} else {
+					meta.type = type
+				}
+			}
+			let attributes = a.parse()
+			if (attributes) {
+				meta.attributes = attributes
+			}
+			return meta
+		},
+		ObjectName_default: function(_) {
+			return 'object'
+		},
+		ObjectName_class: function(l, a) {
+			return l.source.contents + a.children.map(c => c.source.contents).join("")
+		},
+		Name: function(l, a) {
+			return l.source.contents + a.children.map(c => c.source.contents).join("")
+		},
+		Attributes: function(a) {
+			let attrs = {}
+			a.children.map(c => {
+				let attr = c.parse()
+				attrs[attr.name] = attr.value
+			})
+			return attrs
+		},
+		Attribute: function(n, _, v) {
+			let name = n.parse()
+			let value = v.parse()
+			return {
+				name: name,
+				value: value
+			}
 		},
 		Object_empty: function (_1, _2) { return {}; },
 		Object_nonEmpty: function (_1, x, _3, xs, _5) {
