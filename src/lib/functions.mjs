@@ -47,6 +47,7 @@ export const getType = (obj) => {
 
 export const parse = (text) => {
 	// adapted from https://github.com/jwmerrill/ohm-grammar-json/
+	let refs = {}
 
 	let tson = ohm.grammar(`
 TSON {
@@ -60,6 +61,7 @@ TSON {
     | Type? True
     | Type? False
     | Type? Null 
+    | ObjectType Null
   )
 
   Type = 
@@ -153,8 +155,6 @@ TSON {
 }
 	`)
 
-
-
 	const actions = {
 		Value: function(t, v) {
 			let tsonType = {};
@@ -163,6 +163,12 @@ TSON {
 			}
 			let value = v.parse()
 			if (tsonType?.type || tsonType?.attributes) {
+				if (tsonType.type === 'link' && typeof value === 'string' && value[0]==='#') {
+					let reference = value.substring(1)
+					if (refs[reference]) {
+						value = refs[reference]
+					}
+				}
 				if (typeof value === "string") {
 					//FIXME: toJSON of String() is not the same as a string
 					//So maybe make a TSONString?
@@ -176,12 +182,15 @@ TSON {
 				}
 				//FIXME: null... is an object, but all nulls are the same object...
 				typeInfo.set(value, tsonType)
+				if (tsonType.attributes?.id) {
+					refs[tsonType.attributes.id] = value
+				}
 			}
 			return value
 		},
 		Type: function(_1, n, a, _2) {
 			let meta = {}
-			let type = n.parse()
+			let type = n.source.contents
 			if (type) {
 				meta.type = type
 			}
@@ -193,7 +202,7 @@ TSON {
 		},
 		ObjectType: function(_1, n, a, _2) {
 			let meta = {}
-			let type = n.parse()
+			let type = n.source.contents
 			if (type) {
 				if (type[0]==type[0].toUpperCase()) {
 					meta.type = 'object'
@@ -228,7 +237,7 @@ TSON {
 			return attrs
 		},
 		Attribute: function(n, _, v) {
-			let name = n.parse()
+			let name = n.source.contents
 			let value = v.parse()
 			return {
 				name: name,
