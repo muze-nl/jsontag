@@ -1,12 +1,6 @@
-import TSONType from './TSONType.mjs'
-import { encodeProperties } from './functions.mjs'
+import * as TSON from './functions.mjs'
 
-export default class TSONObject extends TSONType {
-
-	constructor()
-	{
-		super()
-	}
+export default class TSONObject {
 
 	toJSON()
 	{
@@ -15,11 +9,11 @@ export default class TSONObject extends TSONType {
 
 	toTSON()
 	{
-		let classlist=this.getAttribute('class')
+		let classlist = TSON.getAttribute(this,'class')
 		let list = []
 		if (typeof classlist === 'string') {
 			list = [classlist]
-			let attrs = this.getAttributes()
+			let attrs = TSON.getAttributes(this)
 			delete attrs.class
 			attrs = Object.keys(attrs).map(attr => {
 				let attrValue = attrs[attr]
@@ -33,11 +27,11 @@ export default class TSONObject extends TSONType {
 			}
 		} else {
 			list = ['object']
-			let attrs = this.getAttributesString()
+			let attrs = TSON.getAttributesString(this)
 			if (attrs) {
 				list.push(attrs)
 			}
 		}
-		return '<'+list.join(' ')+'>{'+encodeProperties(this)+'}'
+		return '<'+list.join(' ')+'>{'+TSON.encodeProperties(this)+'}'
 	}
 }

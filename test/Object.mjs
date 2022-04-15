@@ -3,32 +3,30 @@ import TSON from '../src/TSON.mjs'
 import tap from 'tap'
 
 tap.test('Create', t => {
-	let d = new TSONObject()
-	t.equal(d.toTSON(), '<object>{}')
+	let d = {}
+	t.equal(TSON.stringify(d), '<object>{}')
 	t.end()
 })
 
 tap.test('Properties', t => {
-	let d = new TSONObject()
-	d.foo = 'Bar'
-	t.equal(d.toTSON(), '<object>{"foo":"Bar"}')
+	let d = { foo: 'Bar' }
+	t.equal(TSON.stringify(d), '<object>{"foo":"Bar"}')
 	t.end()
 })
 
 tap.test('Class', t => {
-	let d = new TSONObject()
-	d.setAttribute('class','Person')
-	d.name = 'John'
-	t.equal(d.toTSON(), '<Person>{"name":"John"}')
+	let d = { name: "John"}
+	TSON.setAttribute(d, 'class','Person')
+	t.equal(TSON.stringify(d), '<Person>{"name":"John"}')
 	t.end()
 })
 
 tap.test('Class2', t => {
 	let d = new TSONObject()
-	d.setAttribute('class','Person')
-	d.addAttribute('class','User')
+	TSON.setAttribute(d, 'class','Person')
+	TSON.addAttribute(d, 'class','User')
 	d.name = 'John'
-	t.equal(d.toTSON(), '<object class="Person User">{"name":"John"}')
+	t.equal(TSON.stringify(d), '<object class="Person User">{"name":"John"}')
 	t.end()
 })
 

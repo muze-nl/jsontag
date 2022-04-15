@@ -4,7 +4,8 @@ import Decimal from './lib/Decimal.mjs'
 import Money from './lib/Money.mjs'
 import TSONArray from './lib/Array.mjs'
 import TSONObject from './lib/Object.mjs'
-import { parse, stringify, getType } from './lib/functions.mjs'
+import * as attr from './lib/functions.mjs'
+import parse from './lib/parse.mjs'
 
 export default class TSON 
 {
@@ -15,9 +16,14 @@ export default class TSON
 		TSON.Money = Money
 		TSON.Object = TSONObject
 		TSON.Array = TSONArray
-		TSON.stringify = stringify
+		TSON.stringify = attr.stringify
 		TSON.parse = parse
-		TSON.getType = getType
+		TSON.getType = attr.getType
+		TSON.setAttribute = attr.setAttribute
+		TSON.getAttribute = attr.getAttribute
+		TSON.addAttribute = attr.addAttribute
+		TSON.getAttributes = attr.getAttributes
+		TSON.getAttributesString = attr.getAttributesString
 	}
 
 }
