@@ -1,4 +1,3 @@
-import TSONObject from '../src/lib/Object.mjs'
 import TSON from '../src/TSON.mjs'
 import tap from 'tap'
 
@@ -22,7 +21,7 @@ tap.test('Class', t => {
 })
 
 tap.test('Class2', t => {
-	let d = new TSONObject()
+	let d = {}
 	TSON.setAttribute(d, 'class','Person')
 	TSON.addAttribute(d, 'class','User')
 	d.name = 'John'

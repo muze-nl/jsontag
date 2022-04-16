@@ -1,7 +1,6 @@
 import Decimal from './Decimal.mjs'
-import TSONType from './TSONType.mjs'
 
-export default class Money extends TSONType {
+export default class Money {
 
 	#c; 
 	#i; 

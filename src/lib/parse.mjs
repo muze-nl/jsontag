@@ -4,6 +4,7 @@ import ohm from 'ohm-js'
 export default function parse(text) {
 	// adapted from https://github.com/jwmerrill/ohm-grammar-json/
 	let refs = {}
+	let unresolved = []
 
 	let tson = ohm.grammar(`
 TSON {
@@ -139,6 +140,7 @@ TSON {
 				}
 				//FIXME: null... is an object, but all nulls are the same object...
 				TSON.setType(value, tsonType.type)
+				TSON.setAttributes(value, tsonType.attributes)
 				if (tsonType.attributes?.id) {
 					refs[tsonType.attributes.id] = value
 				}
@@ -207,11 +209,26 @@ TSON {
 			var k = x.children[0].parse();
 			var v = x.children[2].parse();
 			out[k] = v;
+			if (TSON.getType(v)==='link') {
+				unresolved.push({
+					src: out,
+					key: k,
+					val: v
+				});
+			}
 			for (var i = 0; i < xs.children.length; i++) {
 				var c = xs.children[i];
 				k = c.children[0].parse();
 				v = c.children[2].parse();
 				out[k] = v;
+				if (TSON.getType(v)==='link') {
+					unresolved.push({
+						src: out,
+						key: k,
+						val: v
+
+					});
+				}
 			}
 			return out;
 		},
@@ -221,7 +238,15 @@ TSON {
 		Array_nonEmpty: function (_1, x, _3, xs, _5) {
 			var out = [x.parse()];
 			for (var i = 0; i < xs.children.length; i++) {
-				out.push(xs.children[i].parse());
+				let c = xs.children[i].parse()
+				out.push(c);
+				if (TSON.getType(c)==='link') {
+					unresolved.push({
+						src: out,
+						key: out.length-1,
+						val: c
+					});
+				}
 			}
 			return out;
 		},
@@ -261,6 +286,14 @@ TSON {
 	semantics.addOperation('parse', actions)
 	const adapter = semantics(match)
 	let result = adapter.parse()
-	// TODO resolve remaining <link>s
+
+	unresolved.forEach(u => {
+		if (TSON.getType(u.val)==='link' && u.val[0]==='#') {
+			let id = u.val.substring(1)
+			if (typeof refs[id] !== 'undefined') {
+				u.src[u.key] = refs[id]
+			}
+		}
+	})
 	return result
 }

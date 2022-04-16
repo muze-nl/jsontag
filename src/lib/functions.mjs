@@ -9,6 +9,9 @@ export const stringify = (value, references=null) => {
 		}
 		return '<link>"#'+id+'"'
 	}
+	if (typeof value === 'undefined') {
+		return 'null'
+	}
 	if (typeof value.toTSON == 'function') {
 		return value.toTSON(references)
 	} else if (Array.isArray(value)) {
@@ -16,19 +19,23 @@ export const stringify = (value, references=null) => {
 	} else if (value instanceof Object) {
 		switch (getType(value)) {
 			case 'object': 
+				// FIXME: handle null?
 				return getTypeString(value) + '{' + encodeProperties(value, references) + '}'
 			break
-			case 'object': 
+			case 'array': 
 				return getTypeString(value) + '[' + encodeEntries(value, references) + '}'
 			break
 			case 'string':
 			case 'decimal':
 			case 'money':
-				return getTypeString(value) + '"' + value + '"'
+			case 'link':
+			case 'url':
+			case 'uuid':
+				return getTypeString(value) + JSON.stringify(''+value)
 			break
 			case 'number':
 			case 'boolean':
-				return getTypeString(value) + value
+				return getTypeString(value) + JSON.stringify(value)
 			break
 			default:
 				throw new Error(getType(value)+' type not yet implemented')
@@ -61,6 +68,9 @@ export const getType = (obj) => {
 			return info.type
 		}
 	}
+	if (Array.isArray(obj)) {
+		return 'array'
+	}
 	return typeof obj
 }
 
@@ -78,12 +88,18 @@ export const setType = (obj, type) => {
 		throw new TypeError('unknown type '+type)
 	}
 	info.type = type
+	if (typeof info.attributes === 'undefined') {
+		info.attributes = {}
+	}
 	typeInfo.set(obj, info)
 }
 
 export const setAttribute = (obj, attr, value) => {
+	if (Array.isArray(value)) {
+		value = value.join(' ')
+	}
 	if (typeof value !== 'string') {
-		throw new TypeError('attribute values must be a string')
+		throw new TypeError('attribute values must be a string or an array of strings')
 	}
 	if (value.indexOf('"')!==-1) {
 		throw new TypeError('attribute values must not contain " character')
@@ -96,9 +112,18 @@ export const setAttribute = (obj, attr, value) => {
 	typeInfo.set(obj, info)
 }
 
+export const setAttributes = (obj, attributes) => {
+	if (typeof attributes !== 'object') {
+		throw new TypeError('attributes param must be an object')
+	}
+	Object.keys(attributes).forEach(key => {
+		setAttribute(obj, key, attributes[key])
+	})
+}
+
 export const getAttribute = (obj, attr) => {
 	let info = typeInfo.get(obj) || { attributes: {}}
-	return info.attributes[attr]	
+	return info.attributes[attr]
 }
 
 export const addAttribute = (obj, attr, value) => {

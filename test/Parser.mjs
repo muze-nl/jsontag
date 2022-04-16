@@ -19,13 +19,17 @@ tap.test('ParseJson', t => {
 
 tap.test('ParseTson', t => {
 	let tson = `
-	<Person>{
+	<object class="Person">{
 		"name": "John",
 		"list": <array>[ 1, 2, 3 ]
 	}
 	`
 	let result = TSON.parse(tson)
-	console.log(result)
+	let tson2 = TSON.stringify(result)
+	t.equal(TSON.getType(result.list), 'array')
+	t.equal(result.name, "John")
+	t.equal(TSON.getType(result), 'object')
+	t.equal(TSON.getTypeString(result), '<Person>')
 	t.end()
 })
 
@@ -37,6 +41,20 @@ tap.test('Link', t => {
 		"bar":<link>"#tson1"
 	}`
 	let result = TSON.parse(tson)
-	console.log(result)
+	t.equal(result.foo, result.bar)
 	t.end()
 })
+
+tap.test('Link2', t => {
+	let tson = `<object id="source">{
+		"foo":<object id="tson1">{
+			"bar":"Baz"
+		},
+		"bar":<link>"#source"
+	}`
+	let result = TSON.parse(tson)
+	t.equal(result, result.bar)
+	t.end()
+})
+
+
