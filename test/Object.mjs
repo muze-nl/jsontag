@@ -3,13 +3,13 @@ import tap from 'tap'
 
 tap.test('Create', t => {
 	let d = {}
-	t.equal(TSON.stringify(d), '<object>{}')
+	t.equal(TSON.stringify(d), '{}')
 	t.end()
 })
 
 tap.test('Properties', t => {
 	let d = { foo: 'Bar' }
-	t.equal(TSON.stringify(d), '<object>{"foo":"Bar"}')
+	t.equal(TSON.stringify(d), '{"foo":"Bar"}')
 	t.end()
 })
 
@@ -31,5 +31,6 @@ tap.test('Class2', t => {
 
 tap.test('foo', t => {
 	let d = new TSON.UUID('5d98b6e3-8feb-4163-be4d-c56446371e89')
+	//TODO
 	t.end()
 })

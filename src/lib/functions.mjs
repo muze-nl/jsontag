@@ -1,11 +1,13 @@
+import * as uuid from 'uuid'
+
 export const stringify = (value, references=null) => {
 	if (!references) {
 		references = new WeakMap()
 	}
 	if (typeof value === 'object' && references.has(value)) {
-		let id = getId(value)
+		let id = getAttribute(value, 'id')
 		if (!id) {
-			id = setId(value)
+			id = createId(value)
 		}
 		return '<link>"#'+id+'"'
 	}
@@ -44,6 +46,12 @@ export const stringify = (value, references=null) => {
 	} else {
 		return JSON.stringify(value)
 	}
+}
+
+function createId(value) {
+	let id = uuid.v4()
+	setAttribute(value, 'id', id)
+	return id
 }
 
 export const encodeProperties = (obj, references=null) => {
@@ -193,6 +201,11 @@ export const getTypeString = (obj) => {
 			return attr+'="'+attrValue+'"'
 		})
 		.join(' ')
+	if (!attributesString) {
+		if (['object','array','string','number','boolean'].indexOf(type)!==-1) {
+			type = ''
+		}
+	}
 	if (type || attributesString) {
 		return '<' + [type, attributesString].filter(Boolean).join(' ') + '>'
 	} else {
