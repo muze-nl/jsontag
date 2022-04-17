@@ -1,4 +1,5 @@
 import * as TSON from './functions.mjs'
+import TSONTypes from './types.mjs'
 import ohm from 'ohm-js'
 
 export default function parse(text) {
@@ -212,7 +213,6 @@ TSON {
 				if (typeof value === "boolean") {
 					value = new Boolean(value)
 				}
-				//FIXME: null... is an object, but all nulls are the same object...
 				TSON.setType(value, tsonType.type)
 				TSON.setAttributes(value, tsonType.attributes)
 				if (tsonType.attributes?.id) {
@@ -323,7 +323,7 @@ TSON {
 		Number: function (e) { return parseFloat(e.source.contents); },
 		True: function (e) { return true; },
 		False: function (e) { return false; },
-		Null: function (e) { return null; }
+		Null: function (e) { return new TSONTypes.Null(); }
 	}
 	const match = tson.match(text);
 	if (match.failed()) {

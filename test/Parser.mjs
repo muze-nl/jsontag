@@ -12,7 +12,8 @@ tap.test('ParseJson', t => {
 		"florb": 1.234
 	}`
 	let result = TSON.parse(json)
-	t.same(result, JSON.parse(json))
+//	t.same(result, JSON.parse(json))
+	t.ok(TSON.isNull(result.baz))
 	t.equal(TSON.getType(result), 'object')
 	t.end()
 })

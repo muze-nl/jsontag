@@ -27,4 +27,5 @@ export default class UUID {
 		let attributes = getAttributesString(this)
 		return '<uuid'+(attributes ? ' ' + attributes : '')+'>'+this.toJSON()
 	}
+
 }

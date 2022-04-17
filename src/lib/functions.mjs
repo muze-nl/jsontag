@@ -66,6 +66,11 @@ export const encodeEntries = (arr, references=null) => {
 	}).join(',')
 }
 
+export const isNull = (v) => {
+	let result = (v === null) || (typeof v.isNull !== 'undefined' && v.isNull)
+	console.log(v)
+	return result
+}
 
 const typeInfo = new WeakMap()
 
