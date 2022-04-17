@@ -21,10 +21,10 @@
   "homepage": "https://github.com/poef/tson#readme",
   "dependencies": {
     "ohm-js": "^16.3.2",
-    "tap": "^16.0.1",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
+    "tap": "^16.0.1",
     "eslint": "^8.13.0"
   }
 }
