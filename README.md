@@ -54,7 +54,7 @@ The list below is preliminary. The aim is to have a good coverage of most used o
 - url
 - uuid
 
-## Circular data
+## Circular data, or references
 
 One shortcoming of JSON is that it cannot represent data with internal references. TSON solves this by introducing the `<link>` type. Here's an example:
 
@@ -68,3 +68,60 @@ One shortcoming of JSON is that it cannot represent data with internal reference
 ```	
 
 When parsed the property `bar` is a reference to the parent object of that property. The current stringify implementation (javascript) automatically add `id` attributes and `link` values when a reference to a previous value is found.
+
+This allows for complex graphs to be serialized to TSON and revived correctly. The `<link>` type does not specify a specific format, other that a string. It is implied that the URL format is explicitly supported as the default.
+
+## Typed Null values
+
+JSON only supports a single `null` value. Each null is identical to each other null. This makes it impossible to add type and attribute information to it. So TSON uses a Null class. Each instance of the Null class is unique. The Null class has no properties or methods, except for:
+- isNull: property, always true
+- toString: returns ''
+- toJSON: returns 'null'
+- toTSON: return typeInfo + 'null'
+
+Any access to other properties or methods results in an exception
+
+Because TSON now can keep type and attribute information, you could create your own typed Null object when reviving TSON data.
+
+## TODO
+
+- add a 'reviver' function parameter to TSON.parse
+  the reviver is passed (key, value, meta)
+  meta is an object with the unresolved references (links) and ids index
+
+- add Date format to parser, so only ISO-8601 formatted dates pass
+
+- allow "," in money format, only every 3 digits
+
+- add stub type class for most tson types, make it optional to instantiate these instead of base json types
+
+- write more tests
+
+
+## Motivation
+
+You might be wondering why someone would create yet another data interchange format. What is wrong with all the stuff that already exists?
+
+For that, I need some background. I've long wondered how and why the Web has gotten so big and universal, in such a short time. And why it has staying power. Lots of smart people have criticized certain design principles of the web. Specifically the limitations in HTML, how it for a long time didn't allow extensions. There was no concept of abstractions building on top of eachother, like we're used to in programming language. So later on we got XML (and XHTML), trying to fix (among other things) that lack of abstraction.
+
+And yet, XML has lost to JSON, which again has no concept of adding new abstractions. 
+
+With the semantic web and Linked Data, people all over the world are trying to build a new data-centric (or knowledge-centric) web. One of the attempts to make this more popular is to embrace JSON (with JSON-LD) and extend it to support meta information, or specifically meaning, semantics. However, this hasn't really worked yet. 
+
+Given a list of things that have worked, read: become popular or even universal, versus the list of things that have not become popular, I found one common thing:
+
+All popular formats are fundamentally limited. You cannot extend the format itself.
+
+The hypothesis, which TSON is trying to prove, is that by fixing the format, every implementation is also fixed, so there are no dialects. Everyone is talking the same language. Therefor, it becomes trivial to support it everywhere.
+
+Whereas more powerfull formats, which do allows for extension, e.g. XML, become fragmented.
+
+I believe that the Linked Data world is such a fragmented world. There are islands of interoperability, where organizations have agreed to a set of common ontologies. But if you step outside those islands, there is no common base. Attempts like dublin core and skos, fail because they are so broad that you can't use it without an academic level comprehension of linked data and knowledge bases.
+
+With TSON I'm attempting to create such a base. The idea is that by broadening JSON, and keeping it backwards compatible, it will be easy for programmers to incorporate. The next step is to create a universal TSON client, just like the browser is a universal HTML client. This universal TSON client should be able to render any TSON in human readable format. You should be able to query it and edit it. And you should be able to add scripts. This client will most probably be an extension on the normal web browser, hopefully just by adding some javascript.
+
+Once this universal client exists, I'm hoping that Linked Data will be a normal and sensible progression from that base. For that reason I'm also creating a TSON ontology. This ontology differs from the usual Linked Data ontologies, in that it only specifies the format of its Subjects, not the meaning. So there will be no 'startDate' or 'endDate', just 'date'. But hopefully because of that, it may become a kind of low level glue that connects different ontologies.
+
+Because I would like Linked Data to be a natural fit for TSON, I haven't (yet) limited what kind of attributes you can add. TSON itself defines just two:
+- id
+- class
