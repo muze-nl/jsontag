@@ -4,7 +4,7 @@ JSON has won the battle for universal data interchange format. There are still s
 
 However, JSON has a problem. It is too restricted. There are too few basic data types. This means that if you do need to specify a specific data type, like `Date`, you must go out of your way to either define a JSON Schema, or, another external definition, like JSON-LD does. This leads to unnecessary complexity.
 
-TypeScript has shown that there is a need for types sometimes. So instead of creating another Something-in-JSON format, TSON enhances the JSON format with additional type information. Every JSON file is valid TSON. Every TSON file can be easily stripped of type information to get valid JSON.
+Instead of creating another Something-in-JSON format, TSON enhances the JSON format with additional type information inline. Every JSON file is valid TSON. Every TSON file can be easily stripped of type information to get valid JSON.
 
 TSON looks like this:
 ```
@@ -54,14 +54,6 @@ The list below is preliminary. The aim is to have a good coverage of most used o
 - url
 - uuid
 
-### Compound types
-
-Depending on complexity of implementation as well as how to parse conflicting data, this might or might not become part of TSON.
-
-- array of type X
-- range of type X
-- interval of type X
-
 ## Circular data
 
 One shortcoming of JSON is that it cannot represent data with internal references. TSON solves this by introducing the `<link>` type. Here's an example:
@@ -76,25 +68,3 @@ One shortcoming of JSON is that it cannot represent data with internal reference
 ```	
 
 When parsed the property `bar` is a reference to the parent object of that property. The current stringify implementation (javascript) automatically add `id` attributes and `link` values when a reference to a previous value is found.
-
-## Short class syntax
-
-The idea behind the `class` attribute is that it allows you to label your objects, just like in HTML you can label your HTML elements. It does not trigger any extra behaviour in TSON itself. But it does give you a good hook to add more meaning to the TSON format. This could be used to enhance or replace things like JSON Schema or JSON-LD.
-
-But since there is only one object type and most data is composed of objects, TSON for now allows you to compress the over-the-wire format by representing objects with a single class name like this:
-
-```
-<Person>{
-	"name": "John"
-}
-```
-
-Instead of this:
-```
-<object class="Person">{
-	"name": "John"
-}
-```
-
-The requirements are: The class attribute must contain a single class name. The class name must start with an uppercase letter. This last requirement is to prevent name conflicts with the basic TSON types, which all start with a lowercase letter.
-
