@@ -29,7 +29,7 @@ tap.test('ParseTson', t => {
 	t.equal(TSON.getType(result.list), 'array')
 	t.equal(result.name, "John")
 	t.equal(TSON.getType(result), 'object')
-	t.equal(TSON.getTypeString(result), '<Person>')
+	t.equal(TSON.getTypeString(result), '<object class="Person">')
 	t.end()
 })
 

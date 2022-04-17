@@ -12,38 +12,79 @@ TSON {
 
   Value =  
     ( ObjectType? Object
-    | Type? Array
-    | Type? String
-    | Type? Number
-    | Type? True
-    | Type? False
-    | Type? Null 
-    | ObjectType Null
+    | ArrayType? Array
+    | StringType? String
+    | UUIDType? UUID
+    | NumberType? Number
+    | IntType? Integer
+    | FloatType? Float
+    | DecimalType? Decimal
+    | MoneyType? Money
+    | StringyType? String
+    | BooleanType? True
+    | BooleanType? False
+    | Type? Null
   )
+
+  ObjectType = 
+    "<" "object" Attributes ">"
+
+  ArrayType = 
+    "<" "array" Attributes ">"
+
+  StringType = 
+    "<" "string" Attributes ">"
+
+  UUIDType = 
+    "<" "uuid" Attributes ">"
+
+  NumberType = 
+    "<" "number" Attributes ">"
+
+  IntType = 
+    "<" IntTypeName Attributes ">"
+
+  FloatType = 
+    "<" FloatTypeName Attributes ">"
+
+  DecimalType =
+  	"<" "decimal" Attributes ">"
+
+  BooleanType = 
+    "<" "boolean" Attributes ">"
+
+  MoneyType =
+    "<" "money" Attributes ">"
+
+  StringyType =
+		"<" StringyTypeNames Attributes ">"
 
   Type = 
   	"<" TypeName Attributes ">"
 
   TypeName = 
-    "array" | "string" | "number" | "boolean" | "decimal" | "money" | "uuid" | "link" 
+    "array" | "string" | "number" | "boolean" | "decimal" | "money" | "uuid" | 
+		StringyTypeNames | IntTypeName | FloatTypeName |  
+    "timestamp" 
 
-  ObjectType = 
-    "<" ObjectName Attributes ">"
+  StringyTypeNames =
+    "link" | "text" | "blob" | "color" | "date" | "email" | "hash" | "interval" | "phone" | "range" | "time" | "url" 
 
-  ObjectName = 
-  	"object" -- default
-  	| upperCaseLetter alnum* -- class
+  IntTypeName = 
+		"int" | "uint" | "int8" | "uint8" | "int16" | "uint16" | "int32" |
+    "uint32" | "int64" | "uint64" 
 
-  upperCaseLetter = "A".."Z"
-
-  Name =
-  	letter alnum*
+  FloatTypeName = 
+    "float" | "float32" | "float64"
 
   Attributes =
   	Attribute*
 
   Attribute =
   	Name "=" stringLiteral
+
+  Name =
+  	letter alnum*
 
   Object =
     "{" "}" -- empty
@@ -55,6 +96,19 @@ TSON {
   Array =
     "[" "]" -- empty
     | "[" Value ("," Value)* "]" -- nonEmpty
+
+  UUID = 
+  	"\\"" hex hex hex hex hex hex hex hex "-" 
+  				hex hex hex hex "-"
+  				"0".."5" hex hex hex "-"
+  				caseInsensitive<"089ab"> hex hex hex "-"
+  				hex hex hex hex hex hex hex hex hex hex hex hex
+  	"\\""
+
+  hex = "0".."9" | "a".."f" | "A".."F"
+
+  Money =
+  	"\\"" upper* "$" decimal "\\""
 
   String (String) =
     stringLiteral
@@ -78,6 +132,13 @@ TSON {
     | "u" fourHexDigits -- codePoint
 
   fourHexDigits = hexDigit hexDigit hexDigit hexDigit
+
+  Integer = wholeNumber
+
+  Decimal = "\\"" decimal "\\""
+
+  Float = 
+  	numberLiteral
 
   Number (Number) =
     numberLiteral
@@ -111,6 +172,19 @@ TSON {
   Null = "null"
 }
 	`)
+
+	function parseType(_1, n, a, _2) {
+		let meta = {}
+		let type = n.source.contents
+		if (type) {
+			meta.type = type
+		}
+		let attributes = a.parse()
+		if (attributes) {
+			meta.attributes = attributes
+		}
+		return meta		
+	}
 
 	const actions = {
 		Value: function(t, v) {
@@ -147,43 +221,17 @@ TSON {
 			}
 			return value
 		},
-		Type: function(_1, n, a, _2) {
-			let meta = {}
-			let type = n.source.contents
-			if (type) {
-				meta.type = type
-			}
-			let attributes = a.parse()
-			if (attributes) {
-				meta.attributes = attributes
-			}
-			return meta
-		},
-		ObjectType: function(_1, n, a, _2) {
-			let meta = {}
-			let type = n.source.contents
-			if (type) {
-				if (type[0]==type[0].toUpperCase()) {
-					meta.type = 'object'
-					meta.attributes = {
-						"class": type
-					}
-				} else {
-					meta.type = type
-				}
-			}
-			let attributes = a.parse()
-			if (attributes) {
-				meta.attributes = attributes
-			}
-			return meta
-		},
-		ObjectName_default: function(_) {
-			return 'object'
-		},
-		ObjectName_class: function(l, a) {
-			return l.source.contents + a.children.map(c => c.source.contents).join("")
-		},
+		Type: parseType,
+		ObjectType: parseType,
+		ArrayType: parseType,
+		StringyType: parseType,
+		UUIDType: parseType,
+		NumberType: parseType,
+		IntType: parseType,
+		FloatType: parseType,
+		DecimalType: parseType,
+		MoneyType: parseType,
+		BooleanType: parseType,
 		Name: function(l, a) {
 			return l.source.contents + a.children.map(c => c.source.contents).join("")
 		},

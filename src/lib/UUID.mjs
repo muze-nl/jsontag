@@ -1,3 +1,5 @@
+import { getAttributesString } from "./functions.mjs"
+
 export default class UUID {
 	#value;
 
@@ -22,6 +24,7 @@ export default class UUID {
 
 	toTSON()
 	{
-		return '<uuid>'+this.toJSON()
+		let attributes = getAttributesString(this)
+		return '<uuid'+(attributes ? ' ' + attributes : '')+'>'+this.toJSON()
 	}
 }

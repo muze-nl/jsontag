@@ -16,7 +16,7 @@ tap.test('Properties', t => {
 tap.test('Class', t => {
 	let d = { name: "John"}
 	TSON.setAttribute(d, 'class','Person')
-	t.equal(TSON.stringify(d), '<Person>{"name":"John"}')
+	t.equal(TSON.stringify(d), '<object class="Person">{"name":"John"}')
 	t.end()
 })
 

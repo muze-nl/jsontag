@@ -184,15 +184,7 @@ export const getAttributesString = (obj) => {
 
 export const getTypeString = (obj) => {
 	let type = getType(obj)
-	let classlist = getAttribute(obj, 'class')
 	let attributes = getAttributes(obj)
-	if (classlist && typeof classlist === 'string') {
-		let classname = classlist
-		if (classname[0].toUpperCase()===classname[0]) {
-			delete attributes.class
-			type = classname
-		}
-	}
 	let attributesString = Object.entries(attributes)
 		.map(([attr, attrValue]) => {
 			if (Array.isArray(attrValue)) {
