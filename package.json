@@ -2,7 +2,8 @@
   "name": "tson",
   "version": "0.1.0",
   "description": "typed json library",
-  "main": "src/tson.js",
+  "type": "module",
+  "main": "src/tson.mjs",
   "directories": {
     "test": "test"
   },
@@ -19,12 +20,20 @@
     "url": "https://github.com/poef/tson/issues"
   },
   "homepage": "https://github.com/poef/tson#readme",
+  "targets": {
+    "regular": {
+      "source": "src/browser.mjs",
+      "context": "browser",
+      "includeNodeModules": true
+    }
+  },
   "dependencies": {
     "ohm-js": "^16.3.2",
+    "parcel": "^2.4.1",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
-    "tap": "^16.0.1",
-    "eslint": "^8.13.0"
+    "eslint": "^8.13.0",
+    "tap": "^16.0.1"
   }
 }
