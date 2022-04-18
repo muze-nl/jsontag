@@ -21,7 +21,7 @@ For example, though there is only one type `object`, just like in JSON, you can 
 ## Install / Usage
 
 ```shell
-npm install tson
+npm install @muze-nl/tson
 ```
 
 In the browser:

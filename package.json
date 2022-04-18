@@ -1,6 +1,6 @@
 {
-  "name": "tson",
-  "version": "0.1.0",
+  "name": "@muze-nl/tson",
+  "version": "0.1.1",
   "description": "typed json library",
   "type": "module",
   "main": "src/tson.mjs",
