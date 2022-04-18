@@ -91,7 +91,9 @@ Because TSON now can keep type and attribute information, you could create your 
 
 - add Date format to parser, so only ISO-8601 formatted dates pass
 
-- allow "," in money format, only every 3 digits
+- figure out if the URL parser must become strict, to avoid server-side request forgery using differences in the parsing of invalid URLs
+
+- tie down decimal format, money format, allow "," in money format, only every 3 digits
 
 - add stub type class for most tson types, make it optional to instantiate these instead of base json types
 
