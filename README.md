@@ -18,6 +18,30 @@ Type information is inserted immediately in front of a value, enclosed in `<` an
 
 For example, though there is only one type `object`, just like in JSON, you can enhance it with attributes. Here we've added the `class` attribute. The type syntax is based heavily on the HTML tag syntax. There is one difference, attribute names are more restricted. You aren't allowed to use the `-` character in an attribute name. This is because it leads to less readable code in most programming languages.
 
+## Install / Usage
+
+```shell
+npm install tson
+```
+
+In the browser:
+
+```javascript
+<script src="node_modules/tson/dist/browser.js"></script>
+<script>
+    let p = TSON.parse('<object class="Person">{"name":"John"}')
+    let s = TSON.stringify(p)
+</script>
+```
+
+In node:
+```javascript
+import TSON from 'tson'
+
+let p = TSON.parse('<object class="Person">{"name":"John"}')
+let s = TSON.stringify(p)
+```
+
 ## TSON Types
 
 The list below is preliminary. The aim is to have a good coverage of most used or useful types, without creating an unwieldy specification. It should be only slightly harder to implement TSON support compared to JSON support. Some inspiration was taken from HTML, PostgreSQL and [RED](https://red-lang.org)
