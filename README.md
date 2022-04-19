@@ -107,6 +107,19 @@ Any access to other properties or methods results in an exception
 
 Because TSON now can keep type and attribute information, you could create your own typed Null object when reviving TSON data.
 
+## Monkeypatching
+
+Upgrade a program to use TSON by:
+
+```javascript
+JSON.parse = TSON.parse
+JSON.stringify = TSON.stringify
+```
+
+Since the API is identical this just works. Use at your own risk however...
+
+FIXME: TSON user JSON.stringify internally. So make a referfence to the original stringify function on load. 
+
 ## TODO
 
 - add a 'reviver' function parameter to TSON.parse
