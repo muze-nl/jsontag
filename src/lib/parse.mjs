@@ -101,7 +101,7 @@ TSON {
   UUID = 
   	"\\"" hex hex hex hex hex hex hex hex "-" 
   				hex hex hex hex "-"
-  				"0".."5" hex hex hex "-"
+  				"0".."8" hex hex hex "-"
   				caseInsensitive<"089ab"> hex hex hex "-"
   				hex hex hex hex hex hex hex hex hex hex hex hex
   	"\\""
