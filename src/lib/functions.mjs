@@ -1,5 +1,8 @@
 import * as uuid from 'uuid'
 
+// keep reference to original JSON.stringify, in case someone monkeypatches it
+const jsonStringify = JSON.stringify
+
 export const stringify = (value, references=null) => {
 	if (!references) {
 		references = new WeakMap()
@@ -33,18 +36,18 @@ export const stringify = (value, references=null) => {
 			case 'link':
 			case 'url':
 			case 'uuid':
-				return getTypeString(value) + JSON.stringify(''+value)
+				return getTypeString(value) + jsonStringify(''+value)
 			break
 			case 'number':
 			case 'boolean':
-				return getTypeString(value) + JSON.stringify(value)
+				return getTypeString(value) + jsonStringify(value)
 			break
 			default:
 				throw new Error(getType(value)+' type not yet implemented')
 			break
 		}
 	} else {
-		return JSON.stringify(value)
+		return jsonStringify(value)
 	}
 }
 
@@ -68,7 +71,6 @@ export const encodeEntries = (arr, references=null) => {
 
 export const isNull = (v) => {
 	let result = (v === null) || (typeof v.isNull !== 'undefined' && v.isNull)
-	console.log(v)
 	return result
 }
 
