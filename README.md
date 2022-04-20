@@ -120,11 +120,19 @@ Since the API is identical this just works. Use at your own risk however...
 
 FIXME: TSON user JSON.stringify internally. So make a referfence to the original stringify function on load. 
 
-## TODO
+## Reviver extension
 
-- add a 'reviver' function parameter to TSON.parse
-  the reviver is passed (key, value, meta)
-  meta is an object with the unresolved references (links) and ids index
+JSON.Parse has a `reviver` parameter, and TSON.parse has it too. It is fully backwards compatible, but it adds an extra parameter:
+
+```javascript
+let result = TSON.parse(tson, function(key, value, meta) {
+
+})
+```
+
+The extra meta parameter is an object with an `ids` property, which is an object with all `id` attribute values found in the tson text. As well as a `unresolved` property, which is an array with all `<link>` values, which haven't yet been resolved.
+
+## TODO
 
 - add Date format to parser, so only ISO-8601 formatted dates pass
 
