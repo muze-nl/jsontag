@@ -2,7 +2,7 @@ import * as TSON from './functions.mjs'
 import TSONTypes from './types.mjs'
 import ohm from 'ohm-js'
 
-export default function parse(text) {
+export default function parse(text, reviver) {
 	// adapted from https://github.com/jwmerrill/ohm-grammar-json/
 	let refs = {}
 	let unresolved = []
@@ -98,14 +98,16 @@ TSON {
     "[" "]" -- empty
     | "[" Value ("," Value)* "]" -- nonEmpty
 
-  UUID = 
-  	"\\"" hex hex hex hex hex hex hex hex "-" 
-  				hex hex hex hex "-"
-  				"0".."8" hex hex hex "-"
-  				caseInsensitive<"089ab"> hex hex hex "-"
-  				hex hex hex hex hex hex hex hex hex hex hex hex
-  	"\\""
+  UUID = "\\"" uuidLiteral "\\""
 
+  uuidLiteral = 
+ 	  hex hex hex hex hex hex hex hex "-" 
+		hex hex hex hex "-"
+		"0".."8" hex hex hex "-"
+		( "0" | "8" | "9" | "a" | "A" | "b" | "B" )
+		hex hex hex "-"
+		hex hex hex hex hex hex hex hex hex hex hex hex
+  	
   hex = "0".."9" | "a".."f" | "A".."F"
 
   Money =
@@ -274,7 +276,6 @@ TSON {
 						src: out,
 						key: k,
 						val: v
-
 					});
 				}
 			}
@@ -321,6 +322,7 @@ TSON {
 			return String.fromCharCode(parseInt(e.source.contents, 16));
 		},
 		Number: function (e) { return parseFloat(e.source.contents); },
+		UUID: function(_1, e, _2) { return e.source.contents },
 		True: function (e) { return true; },
 		False: function (e) { return false; },
 		Null: function (e) { return new TSONTypes.Null(); }
@@ -343,5 +345,31 @@ TSON {
 			}
 		}
 	})
+	if (typeof reviver === 'function') {
+		function walk(holder, key) {
+	      var k;
+	      var v;
+	      var value = holder[key];
+	      if (value 
+	      		&& typeof value === "object" 
+	      		&& !(value instanceof String 
+	      		|| value instanceof Number
+	      		|| value instanceof Boolean)
+	      ) {
+	          for (k in value) {
+	              if (Object.prototype.hasOwnProperty.call(value, k)) {
+	                  v = walk(value, k);
+	                  if (v !== undefined) {
+	                      value[k] = v;
+	                  } else {
+	                      delete value[k];
+	                  }
+	              }
+	          }
+	      }
+	      return reviver.call(holder, key, value);
+    }
+		return walk({"":result}, "")
+	}
 	return result
 }
