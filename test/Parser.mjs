@@ -62,7 +62,7 @@ tap.test('Reviver', t =>{
 	let tson = `{
 		"uuid": <uuid>"9408e2c7-8f6d-4c7a-8733-6fd50b791c86"
 	}`
-	let result = TSON.parse(tson, (key, value) => {
+	let result = TSON.parse(tson, (key, value, meta) => {
 		if (key==='uuid') {
 			return new TSON.UUID(value)
 		}

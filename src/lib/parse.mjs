@@ -337,11 +337,12 @@ TSON {
 	const adapter = semantics(match)
 	let result = adapter.parse()
 
-	unresolved.forEach(u => {
+	unresolved.forEach((u,i) => {
 		if (TSON.getType(u.val)==='link' && u.val[0]==='#') {
 			let id = u.val.substring(1)
 			if (typeof refs[id] !== 'undefined') {
 				u.src[u.key] = refs[id]
+				delete unresolved[i]
 			}
 		}
 	})
@@ -367,7 +368,7 @@ TSON {
 	              }
 	          }
 	      }
-	      return reviver.call(holder, key, value);
+	      return reviver.call(holder, key, value, { ids: refs, unresolved: unresolved });
     }
 		return walk({"":result}, "")
 	}
