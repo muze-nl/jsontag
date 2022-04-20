@@ -68,3 +68,25 @@ tap.test('Divide', t => {
 	t.equal(''+e, '1.2000')
 	t.end()	
 })
+
+tap.test('Round', t => {
+	let d = Decimal.from('5.50')
+	let e = d.round()
+	t.equal(''+e, '6')
+	t.end()
+})
+
+tap.test('Floor', t => {
+	let d = Decimal.from('5.50')
+	let e = d.floor()
+	t.equal(''+e, '5')
+	t.end()	
+})
+
+tap.test('Floor', t => {
+	let d = Decimal.from('5.01')
+	let e = d.ceil()
+	t.equal(''+e, '6')
+	t.end()	
+})
+

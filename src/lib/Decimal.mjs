@@ -58,7 +58,8 @@ export default class Decimal {
 
 	toTSON()
 	{
-		return '<decimal>'+this.toJSON()
+		let attributes = getAttributesString(this)
+		return '<decimal'+(attributes ? ' ' + attributes : '')+'>'+this.toJSON()
 	}
 
 	hoist(a,b)
@@ -163,6 +164,45 @@ export default class Decimal {
 
 	toPrecision(e)
 	{
-		console.log('nyi', e)
+		return this.round(e)
+	}
+
+	floor(e=0)
+	{
+		let s = ''+this.#i
+		if ((this.#e+e)<0) {
+			s = s.substring(0, s.length+(this.#e+e))
+		} else {
+			s = s + '0'.repeat(this.#e+e)
+		}
+		return new Decimal(parseInt(s),e)
+	}
+
+	ceil(e=0)
+	{
+		let s = ''+this.#i
+		let d = ''
+		if ((this.#e+e)<0) {
+			d = parseInt(s.substring(s.length+(this.#e+e)))
+			s = s.substring(0, s.length+(this.#e+e))
+		} else {
+			d = 0
+			s = s + '0'.repeat(this.#e+e)
+		}
+		return new Decimal(parseInt(s)+(d?1:0),e)
+	}
+
+	round(e=0)
+	{
+		let s = ''+this.#i
+		let d = ''
+		if ((this.#e+e)<0) {
+			d = s.substring(s.length+(this.#e+e))
+			s = s.substring(0, s.length+(this.#e+e))
+		} else {
+			d = '0'
+			s = s + '0'.repeat(this.#e+e)
+		}
+		return new Decimal(parseInt(s)+(parseInt(d[0])>=5?1:0),e)
 	}
 }

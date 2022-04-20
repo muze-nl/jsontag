@@ -20,16 +20,17 @@ export default class Money {
 		this.#c = c
 	}
 
-	from(c, i=0, e=0)
+	static from(c, i=0, e=0)
 	{
 		if (c instanceof Money) {
 			return c
 		}
 		if (typeof c === 'string') {
 			if (c.indexOf('$') !== -1) {
-				e = -1 * c.substring(c.indexOf('.')).length
-				i = parseInt(c.substring(c.indexOf('$')).replace(/[,.]/g, ''))
-				c = c.substring(0, c.indexOf('$')-1)
+				console.log(c.substring(c.indexOf('$')))
+				e = -1 * c.substring(c.indexOf('.')+1).length
+				i = parseInt(c.substring(c.indexOf('$')+1).replace(/[,.]/g, ''))
+				c = c.substring(0, c.indexOf('$'))
 			} else {
 				if (!(i instanceof Decimal)) {
 					i = Decimal.from(i,e)
@@ -47,7 +48,8 @@ export default class Money {
 
 	toTSON()
 	{
-		return '<decimal>'+this.toJSON()
+		let attributes = getAttributesString(this)
+		return '<money'+(attributes ? ' ' + attributes : '')+'>'+this.toJSON()
 	}
 
 	toString()
@@ -59,6 +61,11 @@ export default class Money {
 	toExp()
 	{
 		return [this.#i, this.#e]
+	}
+
+	getCurrency()
+	{
+		return this.#c
 	}
 
 	multiplyWith(n)
@@ -150,6 +157,21 @@ export default class Money {
 
 	toPrecision(e)
 	{
-		
+		return this.round(e)
+	}
+
+	floor(e=0)
+	{
+		return Money.from(this.#c, new Decimal(this.#i, this.#e).floor(e))
+	}
+
+	ceil(e=0)
+	{
+		return Money.from(this.#c, new Decimal(this.#i, this.#e).ceil(e))
+	}
+
+	round(e=0)
+	{
+		return Money.from(this.#c, new Decimal(this.#i, this.#e).round(e))
 	}
 }
