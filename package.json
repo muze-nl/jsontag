@@ -1,9 +1,9 @@
 {
-  "name": "@muze-nl/tson",
+  "name": "@muze-nl/jsontag",
   "version": "0.2.0",
-  "description": "typed json library",
+  "description": "tagged json library",
   "type": "module",
-  "main": "src/tson.mjs",
+  "main": "src/JSONTag.mjs",
   "directories": {
     "test": "test"
   },
@@ -12,14 +12,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/poef/tson.git"
+    "url": "git+https://github.com/poef/jsontag.git"
   },
   "author": "auke@muze.nl",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/poef/tson/issues"
+    "url": "https://github.com/poef/jsontag/issues"
   },
-  "homepage": "https://github.com/poef/tson#readme",
+  "homepage": "https://github.com/poef/jsontag#readme",
   "targets": {
     "regular": {
       "source": "src/browser.mjs",

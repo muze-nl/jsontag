@@ -1,4 +1,4 @@
-import TSON from '../src/TSON.mjs'
+import JSONTag from '../src/JSONTag.mjs'
 import tap from 'tap'
 
 tap.test('ParseJson', t => {
@@ -11,53 +11,53 @@ tap.test('ParseJson', t => {
 		"baz": null, 
 		"florb": 1.234
 	}`
-	let result = TSON.parse(json)
+	let result = JSONTag.parse(json)
 	t.same(result, JSON.parse(json))
-	t.ok(TSON.isNull(result.baz))
-	t.equal(TSON.getType(result), 'object')
+	t.ok(JSONTag.isNull(result.baz))
+	t.equal(JSONTag.getType(result), 'object')
 	t.end()
 })
 
 tap.test('ParseNull', t => {
 	let json = `<object class="Person">Null`
-	let result = TSON.parse(json)
-	t.ok(TSON.isNull(result))
-	t.equal(TSON.getType(result), 'object')
-	t.ok(result instanceof TSON.Null)
+	let result = JSONTag.parse(json)
+	t.ok(JSONTag.isNull(result))
+	t.equal(JSONTag.getType(result), 'object')
+	t.ok(result instanceof JSONTag.Null)
 	t.end()
 })
 
-tap.test('ParseTson', t => {
-	let tson = `
+tap.test('ParseJSONTag', t => {
+	let jsont = `
 	<object class="Person">{
 		"name": "John",
 		"list": <array>[ 1, 2, 3 ]
 	}
 	`
-	let result = TSON.parse(tson)
-	let tson2 = TSON.stringify(result)
-	t.equal(TSON.getType(result.list), 'array')
+	let result = JSONTag.parse(jsont)
+	let JSONTag2 = JSONTag.stringify(result)
+	t.equal(JSONTag.getType(result.list), 'array')
 	t.equal(result.name, "John")
-	t.equal(TSON.getType(result), 'object')
-	t.equal(TSON.getTypeString(result), '<object class="Person">')
+	t.equal(JSONTag.getType(result), 'object')
+	t.equal(JSONTag.getTypeString(result), '<object class="Person">')
 	t.end()
 })
 
 tap.test('Link', t => {
-	let tson = `{
-		"foo":<object id="tson1">{
+	let jsont = `{
+		"foo":<object id="JSONTag1">{
 			"bar":"Baz"
 		},
-		"bar":<link>"#tson1"
+		"bar":<link>"#JSONTag1"
 	}`
-	let result = TSON.parse(tson)
+	let result = JSONTag.parse(jsont)
 	t.equal(result.foo, result.bar)
 	t.end()
 })
 
 tap.test('Link2', t => {
-	let tson = `<object id="source">{
-		"foo":<object id="tson1">{
+	let jsont = `<object id="source">{
+		"foo":<object id="JSONTag1">{
 			"bar":"Baz"
 		},
 		"bar":<link>"#source"
@@ -69,21 +69,21 @@ tap.test('Link2', t => {
 		//FIXME: geen 'id="X"' gebruiken, maar bijv. 'refid="X"', zodat er minder verwarring 
 		rondom de term id kan ontstaan
  */
-	let result = TSON.parse(tson)
+	let result = JSONTag.parse(jsont)
 	t.equal(result, result.bar)
 	t.end()
 })
 
 tap.test('Reviver', t =>{
-	let tson = `{
+	let jsont = `{
 		"uuid": <uuid>"9408e2c7-8f6d-4c7a-8733-6fd50b791c86"
 	}`
-	let result = TSON.parse(tson, (key, value, meta) => {
+	let result = JSONTag.parse(jsont, (key, value, meta) => {
 		if (key==='uuid') {
-			return new TSON.UUID(value)
+			return new JSONTag.UUID(value)
 		}
 		return value;
 	})
-	t.ok(result.uuid instanceof TSON.UUID)
+	t.ok(result.uuid instanceof JSONTag.UUID)
 	t.end()
 })

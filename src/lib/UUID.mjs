@@ -22,7 +22,7 @@ export default class UUID {
 		return '"'+this.#value+'"'
 	}
 
-	toTSON()
+	toJSONTag()
 	{
 		let attributes = getAttributesString(this)
 		return '<uuid'+(attributes ? ' ' + attributes : '')+'>'+this.toJSON()

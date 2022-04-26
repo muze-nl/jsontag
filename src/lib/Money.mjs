@@ -48,7 +48,7 @@ export default class Money {
 		return '"' + this.#c + '$' + Math.floor(this.#i * Math.pow(10,this.#e)) + '.' + (this.#i % Math.pow(10,-this.#e)) +'"'
 	}
 
-	toTSON()
+	toJSONTag()
 	{
 		let attributes = getAttributesString(this)
 		return '<money'+(attributes ? ' ' + attributes : '')+'>'+this.toJSON()

@@ -20,7 +20,7 @@ export const stringify = (value, replacer=null, space="") => {
         typeof replacer !== "object"
         || typeof replacer.length !== "number"
     )) {
-        throw new Error("TSON.stringify");
+        throw new Error("JSONTag.stringify");
     }
 
 	const encodeProperties = (obj) => {
@@ -71,8 +71,8 @@ export const stringify = (value, replacer=null, space="") => {
 		if (typeof value === 'undefined' || value === null) {
 			return 'null'
 		}
-		if (typeof value.toTSON == 'function') {
-			return value.toTSON(references, replacer, space)
+		if (typeof value.toJSONTag == 'function') {
+			return value.toJSONTag(references, replacer, space)
 		} else if (Array.isArray(value)) {
 			return getTypeString(value) + "["+encodeEntries(value)+"]"
 		} else if (value instanceof Object) {

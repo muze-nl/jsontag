@@ -34,7 +34,7 @@ export default class Null extends ExtendableProxy {
 		return 'null'
 	}
 
-	toTSON()
+	toJSONTag()
 	{
 		let type = getTypeString(this)
 		return type+this.toJSON()

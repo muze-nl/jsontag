@@ -1,5 +1,5 @@
-import * as TSON from './functions.mjs'
-import TSONTypes from './types.mjs'
+import * as JSONTag from './functions.mjs'
+import JSONTagTypes from './types.mjs'
 import ohm from 'ohm-js'
 
 export default function parse(text, reviver) {
@@ -7,8 +7,8 @@ export default function parse(text, reviver) {
 	let refs = {}
 	let unresolved = []
 
-	let tson = ohm.grammar(`
-TSON {
+	let JSONT = ohm.grammar(`
+JSONT {
   Start = Value
 
   Value =  
@@ -192,20 +192,20 @@ TSON {
 
 	const actions = {
 		Value_nonNull: function(t, v) {
-			let tsonType = {};
+			let JSONTagType = {};
 			if (t.children[0]) {
-				tsonType = t.children[0].parse()
+				JSONTagType = t.children[0].parse()
 			}
 			let value = v.parse()
-			if (tsonType?.type || tsonType?.attributes) {
-				if (tsonType.type === 'link' && typeof value === 'string' && value[0]==='#') {
+			if (JSONTagType?.type || JSONTagType?.attributes) {
+				if (JSONTagType.type === 'link' && typeof value === 'string' && value[0]==='#') {
 					let reference = value.substring(1)
 					if (refs[reference]) {
 						value = refs[reference]
 					}
 				}
-				if (!tsonType.type) {
-					tsonType.type = typeof value
+				if (!JSONTagType.type) {
+					JSONTagType.type = typeof value
 				}
 				if (typeof value === "string") {
 					value = new String(value)
@@ -216,10 +216,10 @@ TSON {
 				if (typeof value === "boolean") {
 					value = new Boolean(value)
 				}
-				TSON.setType(value, tsonType.type)
-				TSON.setAttributes(value, tsonType.attributes)
-				if (tsonType.attributes?.id) {
-					refs[tsonType.attributes.id] = value
+				JSONTag.setType(value, JSONTagType.type)
+				JSONTag.setAttributes(value, JSONTagType.attributes)
+				if (JSONTagType.attributes?.id) {
+					refs[JSONTagType.attributes.id] = value
 				}
 			}
 			return value
@@ -263,7 +263,7 @@ TSON {
 			var k = x.children[0].parse();
 			var v = x.children[2].parse();
 			out[k] = v;
-			if (TSON.getType(v)==='link') {
+			if (JSONTag.getType(v)==='link') {
 				unresolved.push({
 					src: out,
 					key: k,
@@ -275,7 +275,7 @@ TSON {
 				k = c.children[0].parse();
 				v = c.children[2].parse();
 				out[k] = v;
-				if (TSON.getType(v)==='link') {
+				if (JSONTag.getType(v)==='link') {
 					unresolved.push({
 						src: out,
 						key: k,
@@ -293,7 +293,7 @@ TSON {
 			for (var i = 0; i < xs.children.length; i++) {
 				let c = xs.children[i].parse()
 				out.push(c);
-				if (TSON.getType(c)==='link') {
+				if (JSONTag.getType(c)==='link') {
 					unresolved.push({
 						src: out,
 						key: out.length-1,
@@ -329,20 +329,20 @@ TSON {
 		UUID: function(_1, e, _2) { return e.source.contents },
 		True: function (e) { return true; },
 		False: function (e) { return false; },
-		Null: function (e) { return new TSONTypes.Null(); }
+		Null: function (e) { return new JSONTagTypes.Null(); }
 	}
-	const match = tson.match(text);
+	const match = JSONT.match(text);
 	if (match.failed()) {
 		throw new Error(match.message)
 	}
 	// see https://github.com/jwmerrill/ohm-grammar-json/blob/master/src/parser.js (en bijbehorende grammar)
-	const semantics = tson.createSemantics()
+	const semantics = JSONT.createSemantics()
 	semantics.addOperation('parse', actions)
 	const adapter = semantics(match)
 	let result = adapter.parse()
 
 	unresolved.forEach((u,i) => {
-		if (TSON.getType(u.val)==='link' && u.val[0]==='#') {
+		if (JSONTag.getType(u.val)==='link' && u.val[0]==='#') {
 			let id = u.val.substring(1)
 			if (typeof refs[id] !== 'undefined') {
 				u.src[u.key] = refs[id]

@@ -56,7 +56,7 @@ export default class Decimal {
 		return '"'+this.toString()+'"'
 	}
 
-	toTSON()
+	toJSONTag()
 	{
 		let attributes = getAttributesString(this)
 		return '<decimal'+(attributes ? ' ' + attributes : '')+'>'+this.toJSON()

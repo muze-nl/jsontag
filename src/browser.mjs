@@ -5,7 +5,7 @@ import Null from './lib/Null.mjs'
 import * as attr from './lib/functions.mjs'
 import parse from './lib/parse.mjs'
 
-window.TSON = {
+window.JSONTag = {
 	UUID: UUID,
 	Decimal: Decimal,
 	Money: Money,
@@ -13,6 +13,7 @@ window.TSON = {
 	stringify: attr.stringify,
 	parse: parse,
 	getType: attr.getType,
+	setType: attr.setType,
 	getTypeString: attr.getTypeString,
 	setAttribute: attr.setAttribute,
 	getAttribute: attr.getAttribute,
