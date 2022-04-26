@@ -25,7 +25,8 @@ TSON {
     | BooleanType? True
     | BooleanType? False
     | Type? Null
-  )
+  ) -- nonNull
+  | "null" -- bareNull
 
   ObjectType = 
     "<" "object" Attributes ">"
@@ -64,7 +65,7 @@ TSON {
   	"<" TypeName Attributes ">"
 
   TypeName = 
-    "array" | "string" | "number" | "boolean" | "decimal" | "money" | "uuid" | 
+    "object" | "array" | "string" | "number" | "boolean" | "decimal" | "money" | "uuid" | 
 		StringyTypeNames | IntTypeName | FloatTypeName |  
     "timestamp" 
 
@@ -172,7 +173,7 @@ TSON {
 
   True = "true"
   False = "false"
-  Null = "null"
+  Null = "Null"
 }
 	`)
 
@@ -190,7 +191,7 @@ TSON {
 	}
 
 	const actions = {
-		Value: function(t, v) {
+		Value_nonNull: function(t, v) {
 			let tsonType = {};
 			if (t.children[0]) {
 				tsonType = t.children[0].parse()
@@ -222,6 +223,9 @@ TSON {
 				}
 			}
 			return value
+		},
+		Value_bareNull: function(v) {
+			return null;
 		},
 		Type: parseType,
 		ObjectType: parseType,

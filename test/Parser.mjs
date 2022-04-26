@@ -12,9 +12,18 @@ tap.test('ParseJson', t => {
 		"florb": 1.234
 	}`
 	let result = TSON.parse(json)
-//	t.same(result, JSON.parse(json))
+	t.same(result, JSON.parse(json))
 	t.ok(TSON.isNull(result.baz))
 	t.equal(TSON.getType(result), 'object')
+	t.end()
+})
+
+tap.test('ParseNull', t => {
+	let json = `<object class="Person">Null`
+	let result = TSON.parse(json)
+	t.ok(TSON.isNull(result))
+	t.equal(TSON.getType(result), 'object')
+	t.ok(result instanceof TSON.Null)
 	t.end()
 })
 
@@ -53,6 +62,13 @@ tap.test('Link2', t => {
 		},
 		"bar":<link>"#source"
 	}`
+/*
+		"bar":<link>"/foo/"  -> json pointer
+		"bar":<link>"//source" -> url - zonder protocol -> altijd https:
+					".." -> illegaal, net als alle andere relatieve paden
+		//FIXME: geen 'id="X"' gebruiken, maar bijv. 'refid="X"', zodat er minder verwarring 
+		rondom de term id kan ontstaan
+ */
 	let result = TSON.parse(tson)
 	t.equal(result, result.bar)
 	t.end()
