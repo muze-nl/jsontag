@@ -26,35 +26,37 @@ export const stringify = (value, replacer=null, space="") => {
 	const encodeProperties = (obj) => {
 		let mind = gap
 		gap += indent
+		let gapstart = ""
+		let gapend = ""
 		let keys = Object.keys(obj)
 		if (Array.isArray(replacer)) {
 			keys = keys.filter(key => replacer.indexOf(key)!==-1)
 		} 
 		if (gap) {
-			return "\n"+gap+keys.map(prop => {
-				return '"'+prop+'":'+str(prop, obj)
-			}).join(",\n"+gap)+"\n"+mind
-		} else {
-			return keys.map(prop => {
-				return '"'+prop+'":'+str(prop, obj)
-			}).join(",")
+			gapstart ="\n"+gap
+			gapend = "\n"+mind
 		}
+		let result = gapstart+keys.map(prop => {
+			return '"'+prop+'":'+str(prop, obj)
+		}).join(","+gapstart)+gapend
 		gap = mind
+		return result
 	}
 
 	const encodeEntries = (arr) => {
 		let mind = gap
 		gap += indent
+		let gapstart = ""
+		let gapend = ""
 		if (gap) {
-			return "\n"+gap+arr.map((value,index) => {
-				return str(index, arr)
-			}).join(",\n"+gap)+"\n"+mind
-		} else {
-			return arr.map((value,index) => {
-				return str(index, arr)
-			}).join(",")
+			gapstart = "\n"+gap
+			gapend = "\n"+mind
 		}
-		gap = mind;
+		let result = gapstart+arr.map((value,index) => {
+			return str(index, arr)
+		}).join(","+gapstart)+gapend
+		gap = mind
+		return result
 	}
 
 	const str = (key, holder) => {
