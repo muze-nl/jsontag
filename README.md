@@ -1,12 +1,12 @@
-# TSON: Typed JSON
+# JSONTag: Tagged JSON
 
 JSON has won the battle for universal data interchange format. There are still some holdouts using XML or SOAP, but if you start a new online API today, the default is JSON. Even the linked data proponents have made a JSON version, called JSON-LD.
 
 However, JSON has a problem. It is too restricted. There are too few basic data types. This means that if you do need to specify a specific data type, like `Date`, you must go out of your way to either define a JSON Schema, or, another external definition, like JSON-LD does. This leads to unnecessary complexity.
 
-Instead of creating another Something-in-JSON format, TSON enhances the JSON format with additional type information inline. Every JSON file is valid TSON. Every TSON file can be easily stripped of type information to get valid JSON.
+Instead of creating another Something-in-JSON format, JSONTag enhances the JSON format with additional type information inline. Every JSON file is valid JSONTag. Every JSONTag file can be easily stripped of type information to get valid JSON.
 
-TSON looks like this:
+JSONTag looks like this:
 ```
 <object class="Person">{
 	"name": "John",
@@ -21,30 +21,30 @@ For example, though there is only one type `object`, just like in JSON, you can 
 ## Install / Usage
 
 ```shell
-npm install @muze-nl/tson
+npm install @muze-nl/JSONTag
 ```
 
 In the browser:
 
 ```javascript
-<script src="node_modules/tson/dist/browser.js"></script>
+<script src="node_modules/JSONT/dist/browser.js"></script>
 <script>
-    let p = TSON.parse('<object class="Person">{"name":"John"}')
-    let s = TSON.stringify(p)
+    let p = JSONTag.parse('<object class="Person">{"name":"John"}')
+    let s = JSONTag.stringify(p)
 </script>
 ```
 
 In node:
 ```javascript
-import TSON from 'tson'
+import JSONTag from 'JSONTag'
 
-let p = TSON.parse('<object class="Person">{"name":"John"}')
-let s = TSON.stringify(p)
+let p = JSONTag.parse('<object class="Person">{"name":"John"}')
+let s = JSONTag.stringify(p)
 ```
 
-## TSON Types
+## JSONTag Types
 
-The list below is preliminary. The aim is to have a good coverage of most used or useful types, without creating an unwieldy specification. It should be only slightly harder to implement TSON support compared to JSON support. Some inspiration was taken from HTML, PostgreSQL and [RED](https://red-lang.org)
+The list below is preliminary. The aim is to have a good coverage of most used or useful types, without creating an unwieldy specification. It should be only slightly harder to implement JSONTag support compared to JSON support. Some inspiration was taken from HTML, PostgreSQL and [RED](https://red-lang.org)
 
 ### JSON derived
 
@@ -80,7 +80,7 @@ The list below is preliminary. The aim is to have a good coverage of most used o
 
 ## Circular data, or references
 
-One shortcoming of JSON is that it cannot represent data with internal references. TSON solves this by introducing the `<link>` type. Here's an example:
+One shortcoming of JSON is that it cannot represent data with internal references. JSONTag solves this by introducing the `<link>` type. Here's an example:
 
 ```
 <object id="source">{
@@ -93,44 +93,44 @@ One shortcoming of JSON is that it cannot represent data with internal reference
 
 When parsed the property `bar` is a reference to the parent object of that property. The current stringify implementation (javascript) automatically add `id` attributes and `link` values when a reference to a previous value is found.
 
-This allows for complex graphs to be serialized to TSON and revived correctly. The `<link>` type does not specify a specific format, other that a string. It is implied that the URL format is explicitly supported as the default.
+This allows for complex graphs to be serialized to JSONTag and revived correctly. The `<link>` type does not specify a specific format, other that a string. It is implied that the URL format is explicitly supported as the default.
 
 ## Typed Null values
 
-JSON only supports a single `null` value. Each null is identical to each other null. This makes it impossible to add type and attribute information to it. So TSON uses a Null class. Each instance of the Null class is unique. The Null class has no properties or methods, except for:
+JSON only supports a single `null` value. Each null is identical to each other null. This makes it impossible to add type and attribute information to it. So JSONTag uses a Null class. Each instance of the Null class is unique. The Null class has no properties or methods, except for:
 - isNull: property, always true
 - toString: returns ''
 - toJSON: returns 'null'
-- toTSON: return typeInfo + 'null'
+- toJSONTag: return typeInfo + 'null'
 
 Any access to other properties or methods results in an exception
 
-Because TSON now can keep type and attribute information, you could create your own typed Null object when reviving TSON data.
+Because JSONTag now can keep type and attribute information, you could create your own typed Null object when reviving JSONTag data.
 
 ## Monkeypatching
 
-Upgrade a program to use TSON by:
+Upgrade a program to use JSONTag by:
 
 ```javascript
-JSON.parse = TSON.parse
-JSON.stringify = TSON.stringify
+JSON.parse = JSONTag.parse
+JSON.stringify = JSONTag.stringify
 ```
 
 Since the API is identical this just works. Use at your own risk however...
 
-FIXME: TSON user JSON.stringify internally. So make a referfence to the original stringify function on load. 
+FIXME: JSONTag user JSON.stringify internally. So make a referfence to the original stringify function on load. 
 
 ## Reviver extension
 
-JSON.Parse has a `reviver` parameter, and TSON.parse has it too. It is fully backwards compatible, but it adds an extra parameter:
+JSON.Parse has a `reviver` parameter, and JSONTag.parse has it too. It is fully backwards compatible, but it adds an extra parameter:
 
 ```javascript
-let result = TSON.parse(tson, function(key, value, meta) {
+let result = JSONTag.parse(JSONTag, function(key, value, meta) {
 
 })
 ```
 
-The extra meta parameter is an object with an `ids` property, which is an object with all `id` attribute values found in the tson text. As well as a `unresolved` property, which is an array with all `<link>` values, which haven't yet been resolved.
+The extra meta parameter is an object with an `ids` property, which is an object with all `id` attribute values found in the JSONTag text. As well as a `unresolved` property, which is an array with all `<link>` values, which haven't yet been resolved.
 
 ## TODO
 
@@ -140,7 +140,7 @@ The extra meta parameter is an object with an `ids` property, which is an object
 
 - tie down decimal format, money format, allow "," in money format, only every 3 digits
 
-- add stub type class for most tson types, make it optional to instantiate these instead of base json types
+- add stub type class for most JSONTag types, make it optional to instantiate these instead of base json types
 
 - write more tests
 
@@ -159,16 +159,16 @@ Given a list of things that have worked, read: become popular or even universal,
 
 All popular formats are fundamentally limited. You cannot extend the format itself.
 
-The hypothesis, which TSON is trying to prove, is that by fixing the format, every implementation is also fixed, so there are no dialects. Everyone is talking the same language. Therefor, it becomes trivial to support it everywhere.
+The hypothesis, which JSONTag is trying to prove, is that by fixing the format, every implementation is also fixed, so there are no dialects. Everyone is talking the same language. Therefor, it becomes trivial to support it everywhere.
 
 Whereas more powerfull formats, which do allows for extension, e.g. XML, become fragmented.
 
 I believe that the Linked Data world is such a fragmented world. There are islands of interoperability, where organizations have agreed to a set of common ontologies. But if you step outside those islands, there is no common base. Attempts like dublin core and skos, fail because they are so broad that you can't use it without an academic level comprehension of linked data and knowledge bases.
 
-With TSON I'm attempting to create such a base. The idea is that by broadening JSON, and keeping it backwards compatible, it will be easy for programmers to incorporate. The next step is to create a universal TSON client, just like the browser is a universal HTML client. This universal TSON client should be able to render any TSON in human readable format. You should be able to query it and edit it. And you should be able to add scripts. This client will most probably be an extension on the normal web browser, hopefully just by adding some javascript.
+With JSONTag I'm attempting to create such a base. The idea is that by broadening JSON, and keeping it backwards compatible, it will be easy for programmers to incorporate. The next step is to create a universal JSONTag client, just like the browser is a universal HTML client. This universal JSONTag client should be able to render any JSONTag in human readable format. You should be able to query it and edit it. And you should be able to add scripts. This client will most probably be an extension on the normal web browser, hopefully just by adding some javascript.
 
-Once this universal client exists, I'm hoping that Linked Data will be a normal and sensible progression from that base. For that reason I'm also creating a TSON ontology. This ontology differs from the usual Linked Data ontologies, in that it only specifies the format of its Subjects, not the meaning. So there will be no 'startDate' or 'endDate', just 'date'. But hopefully because of that, it may become a kind of low level glue that connects different ontologies.
+Once this universal client exists, I'm hoping that Linked Data will be a normal and sensible progression from that base. For that reason I'm also creating a JSONTag ontology. This ontology differs from the usual Linked Data ontologies, in that it only specifies the format of its Subjects, not the meaning. So there will be no 'startDate' or 'endDate', just 'date'. But hopefully because of that, it may become a kind of low level glue that connects different ontologies.
 
-Because I would like Linked Data to be a natural fit for TSON, I haven't (yet) limited what kind of attributes you can add. TSON itself defines just two:
+Because I would like Linked Data to be a natural fit for JSONTag, I haven't (yet) limited what kind of attributes you can add. JSONTag itself defines just two:
 - id
 - class
