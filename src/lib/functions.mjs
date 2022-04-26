@@ -3,70 +3,84 @@ import * as uuid from 'uuid'
 // keep reference to original JSON.stringify, in case someone monkeypatches it
 const jsonStringify = JSON.stringify
 
-export const stringify = (value, references=null) => {
-	if (!references) {
-		references = new WeakMap()
+export const stringify = (value, replacer=null, space="") => {
+
+	let references = new WeakMap()
+
+	const encodeProperties = (obj) => {
+		let keys = Object.keys(obj)
+		if (Array.isArray(replacer)) {
+			keys = keys.filter(key => replacer.indexOf(key)!==-1)
+		} 
+		return keys.map(prop => {
+			return '"'+prop+'":'+str(prop, obj)
+		}).join(',')
 	}
-	if (typeof value === 'object' && references.has(value)) {
-		let id = getAttribute(value, 'id')
-		if (!id) {
-			id = createId(value)
+
+	const encodeEntries = (arr) => {
+		return arr.map((value,index) => {
+			return str(index, arr)
+		}).join(',')
+	}
+
+	const str = (key, holder) => {
+		let value = holder[key]
+		if (typeof value === 'object' && references.has(value)) {
+			let id = getAttribute(value, 'id')
+			if (!id) {
+				id = createId(value)
+			}
+			return '<link>"#'+id+'"'
 		}
-		return '<link>"#'+id+'"'
-	}
-	if (typeof value === 'undefined') {
-		return 'null'
-	}
-	if (typeof value.toTSON == 'function') {
-		return value.toTSON(references)
-	} else if (Array.isArray(value)) {
-		return getTypeString(value) + '['+encodeEntries(value, references)+']'
-	} else if (value instanceof Object) {
-		switch (getType(value)) {
-			case 'object': 
-				// FIXME: handle null?
-				return getTypeString(value) + '{' + encodeProperties(value, references) + '}'
-			break
-			case 'array': 
-				return getTypeString(value) + '[' + encodeEntries(value, references) + '}'
-			break
-			case 'string':
-			case 'decimal':
-			case 'money':
-			case 'link':
-			case 'url':
-			case 'uuid':
-				return getTypeString(value) + jsonStringify(''+value)
-			break
-			case 'number':
-			case 'boolean':
-				return getTypeString(value) + jsonStringify(value)
-			break
-			default:
-				throw new Error(getType(value)+' type not yet implemented')
-			break
+		if (typeof value === 'undefined') {
+			return 'null'
 		}
-	} else {
-		return jsonStringify(value)
+		if (typeof value.toTSON == 'function') {
+			return value.toTSON(references, replacer, space)
+		} else if (Array.isArray(value)) {
+			return getTypeString(value) + '['+encodeEntries(value)+']'
+		} else if (value instanceof Object) {
+			switch (getType(value)) {
+				case 'string':
+				case 'decimal':
+				case 'money':
+				case 'link':
+				case 'url':
+				case 'uuid':
+					return getTypeString(value) + jsonStringify(''+value, replacer, space)
+				break
+				case 'number':
+				case 'boolean':
+					return getTypeString(value) + jsonStringify(value, replacer, space)
+				break
+				case 'array': 
+					return getTypeString(value) + '[' + encodeEntries(value) + '}'
+				break
+				case 'object': 
+					if (typeof replacer === 'function') {
+						value = replacer.call(holder, key, value)
+					}
+					if (value === null) {
+						return "null"
+					}
+					return getTypeString(value) + '{' + encodeProperties(value) + '}'
+				break
+				default:
+					throw new Error(getType(value)+' type not yet implemented')
+				break
+			}
+		} else {
+			return jsonStringify(value, replacer, space)
+		}
 	}
+
+	return str("", {"": value})
 }
 
 function createId(value) {
 	let id = uuid.v4()
 	setAttribute(value, 'id', id)
 	return id
-}
-
-export const encodeProperties = (obj, references=null) => {
-	return Object.keys(obj).map(prop => {
-		return '"'+prop+'":'+stringify(obj[prop], references)
-	}).join(',')
-}
-
-export const encodeEntries = (arr, references=null) => {
-	return arr.map(value => {
-		return stringify(value, references)
-	}).join(',')
 }
 
 export const isNull = (v) => {
