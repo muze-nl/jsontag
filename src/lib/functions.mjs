@@ -7,20 +7,54 @@ export const stringify = (value, replacer=null, space="") => {
 
 	let references = new WeakMap()
 
+	let indent = ""
+	let gap = ""
+
+	if (typeof space === "number") {
+		indent += " ".repeat(space)
+	} else if (typeof space === "string") {
+		indent = space
+	}
+
+	if (replacer && typeof replacer !== "function" && (
+        typeof replacer !== "object"
+        || typeof replacer.length !== "number"
+    )) {
+        throw new Error("TSON.stringify");
+    }
+
 	const encodeProperties = (obj) => {
+		let mind = gap
+		gap += indent
 		let keys = Object.keys(obj)
 		if (Array.isArray(replacer)) {
 			keys = keys.filter(key => replacer.indexOf(key)!==-1)
 		} 
-		return keys.map(prop => {
-			return '"'+prop+'":'+str(prop, obj)
-		}).join(',')
+		if (gap) {
+			return "\n"+gap+keys.map(prop => {
+				return '"'+prop+'":'+str(prop, obj)
+			}).join(",\n"+gap)+"\n"+mind
+		} else {
+			return keys.map(prop => {
+				return '"'+prop+'":'+str(prop, obj)
+			}).join(",")
+		}
+		gap = mind
 	}
 
 	const encodeEntries = (arr) => {
-		return arr.map((value,index) => {
-			return str(index, arr)
-		}).join(',')
+		let mind = gap
+		gap += indent
+		if (gap) {
+			return "\n"+gap+arr.map((value,index) => {
+				return str(index, arr)
+			}).join(",\n"+gap)+"\n"+mind
+		} else {
+			return arr.map((value,index) => {
+				return str(index, arr)
+			}).join(",")
+		}
+		gap = mind;
 	}
 
 	const str = (key, holder) => {
@@ -32,13 +66,13 @@ export const stringify = (value, replacer=null, space="") => {
 			}
 			return '<link>"#'+id+'"'
 		}
-		if (typeof value === 'undefined') {
+		if (typeof value === 'undefined' || value === null) {
 			return 'null'
 		}
 		if (typeof value.toTSON == 'function') {
 			return value.toTSON(references, replacer, space)
 		} else if (Array.isArray(value)) {
-			return getTypeString(value) + '['+encodeEntries(value)+']'
+			return getTypeString(value) + "["+encodeEntries(value)+"]"
 		} else if (value instanceof Object) {
 			switch (getType(value)) {
 				case 'string':
