@@ -15,6 +15,14 @@ tap.test('Add', t => {
 	t.end()
 })
 
+tap.test('Add', t => {
+	let d = Money.from('USD$100.000000001')
+	let e = Money.from('USD$50.25')
+	let f = d.add(e)
+	t.equal(''+f, 'USD$150.250000001')
+	t.end()
+})
+
 tap.test('Add2', t => {
 	let d = Money.from('USD$0.90')
 	let e = Money.from('EUR$0.1')

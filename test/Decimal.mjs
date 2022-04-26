@@ -23,6 +23,14 @@ tap.test('Add2', t => {
 	t.end()
 })
 
+tap.test('Add3', t => {
+	let d = Decimal.from('100.000000001')
+	let e = Decimal.from('50.25')
+	let f = d.add(e)
+	t.equal(''+f, '150.250000001')
+	t.end()
+})
+
 tap.test('Subtract', t => {
 	let d = Decimal.from('10.1234')
 	let e = Decimal.from('9.1234')

@@ -8,7 +8,9 @@ export default class Money {
 
 	constructor(c, i, e=null)
 	{
-		if (isNaN(i)) {
+		if (i instanceof Decimal) {
+			[i, e] = i.toExp()
+		} else if (isNaN(i)) {
 			throw new TypeError(i+' is not a number')
 		}
 		if (e==0) {
@@ -70,16 +72,14 @@ export default class Money {
 
 	multiplyWith(n)
 	{
-		n = Decimal.from(n)
-		let [ ni, ne ] = n.toExp()
-		return new Money( this.#c, this.#i * ni, this.#e + ne )
+		let Dt = new Decimal(this.#i, this.#e)
+		return new Money(this.#c, Dt.multiplyWith(n))
 	}
 
 	divideBy(n)
 	{
-		n = Decimal.from(n)
-		let [ ni, ne ] = n.toExp()
-		return new Money( this.#c, this.#i / ni, this.#e - ne)
+		let Dt = new Decimal(this.#i, this.#e)
+		return new Money(this.#c, Dt.divideBy(n))
 	}
 
 	add(n)
@@ -89,15 +89,9 @@ export default class Money {
 			throw new TypeError('You cannot add different curreency values')
 		}
 		let [ ni, ne ] = n.toExp()
-		if (ne<this.#e) {
-			ni = Math.pow(10, (this.#e - ne)) * ni
-			return new Money(this.#c, this.#i + ni, this.#e)
-		} else if (ne>this.#e) {
-			let i = Math.pow(10, (ne - this.#e)) * this.#i
-			return new Money(this.#c, i + ni, ne)
-		} else {
-			return new Money(this.#c, ni + this.#i, this.#e)
-		}
+		let Dn = new Decimal(ni, ne)
+		let Dt = new Decimal(this.#i, this.#e)
+		return new Money(this.#c, Dt.add(Dn))
 	}
 
 	subtract(n)
@@ -107,15 +101,9 @@ export default class Money {
 			throw new TypeError('You cannot subtract different currency values')
 		}
 		let [ ni, ne ] = n.toExp()
-		if (ne<this.#e) {
-			ni = Math.pow(10, (this.#e - ne)) * ni
-			return new Decimal(this.#i - ni, this.#e)
-		} else if (ne>this.#e) {
-			let i = Math.pow(10, (ne - this.#e)) * this.#i
-			return new Decimal(i - ni, ne)
-		} else {
-			return new Decimal(this.#i - ni, this.#e)
-		}
+		let Dn = new Decimal(ni, ne)
+		let Dt = new Decimal(this.#i, this.#e)
+		return new Money(this.#c, Dt.subtract(Dn))
 	}
 
 	compareWith(n)
@@ -125,19 +113,9 @@ export default class Money {
 			throw new TypeError('You cannot compare different currency values')
 		}
 		let [ ni, ne ] = n.toExp()
-		if (ne<this.#e) {
-			return -1
-		}
-		if (ne>this.#e) {
-			return 1
-		}
-		if (ni<this.#i) {
-			return -1
-		}
-		if (ni>this.#i) {
-			return 1
-		}
-		return 0
+		let Dn = new Decimal(ni, ne)
+		let Dt = new Decimal(this.#i, this.#e)
+		Dt.compareWith(Dn)
 	}
 
 	isLessThan(n)
