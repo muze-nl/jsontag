@@ -1,4 +1,4 @@
-import { getType } from './functions.mjs'
+import { getType, isNull } from './functions.mjs'
 import JSONTagTypes from './types.mjs'
 
 export default function reviver(key, value, meta)

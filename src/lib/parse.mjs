@@ -187,9 +187,11 @@ JSONT {
   False = "false"
   Nil = "Nil"
 
-  Date = digit digit digit digit "-" digit digit "-" digit digit
-  Time = digit digit ":" digit digit ":" digit digit ("." digit digit digit)?
-  Datetime = Date "T" Time
+  Date = "\\"" dateLiteral "\\""
+  dateLiteral = digit digit digit digit "-" digit digit "-" digit digit
+  Time = "\\"" timeLiteral "\\""
+  timeLiteral = digit digit ":" digit digit ":" digit digit ("." digit digit digit)?
+  Datetime = "\\"" dateLiteral "T" timeLiteral "\\""
 }
 	`)
 
@@ -254,6 +256,9 @@ JSONT {
 		DecimalType: parseType,
 		MoneyType: parseType,
 		BooleanType: parseType,
+		DateType: parseType,
+		DatetimeType: parseType,
+		TimeType: parseType,
 		Name: function(l, a) {
 			return l.source.contents + a.children.map(c => c.source.contents).join("")
 		},
@@ -345,7 +350,10 @@ JSONT {
 		UUID: function(_1, e, _2) { return e.source.contents },
 		True: function (e) { return true; },
 		False: function (e) { return false; },
-		Nil: function (e) { return new JSONTagTypes.Nil(); }
+		Nil: function (e) { return new JSONTagTypes.Nil(); },
+		Date: function(_1, e, _2) { return e.source.contents },
+		Datetime: function(_1, e1, _2, e2, _3) { return e1.source.contents+'T'+e2.source.contents },
+		Time: function(_1, e, _2) { return e.source.contents },
 	}
 	const match = JSONT.match(text);
 	if (match.failed()) {
