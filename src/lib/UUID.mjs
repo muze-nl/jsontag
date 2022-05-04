@@ -9,7 +9,20 @@ export default class UUID {
 		if (!re.test(uuid)) {
 			throw new TypeError(uuid+' is not a valid UUID')
 		}
-		this.#value = uuid
+		this.#value = ''+uuid
+	}
+
+	static from(uuid)
+	{
+		if (uuid instanceof UUID) {
+			return uuid
+		}
+		return new UUID(uuid)
+	}
+	
+	get value()
+	{
+		return this.#value
 	}
 
 	toString()

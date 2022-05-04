@@ -118,8 +118,6 @@ JSON.stringify = JSONTag.stringify
 
 Since the API is identical this just works. Use at your own risk however...
 
-FIXME: JSONTag user JSON.stringify internally. So make a referfence to the original stringify function on load. 
-
 ## Reviver extension
 
 JSON.Parse has a `reviver` parameter, and JSONTag.parse has it too. It is fully backwards compatible, but it adds an extra parameter:

@@ -140,8 +140,8 @@ export const getType = (obj) => {
 }
 
 export const types = [
-	'object','array','string','number','boolean',
-	'decimal','money','uuid','link'
+	'object','array','string','number','boolean',				// JSON
+	'decimal','money','uuid','link','date','time','datetime'
 ]
 
 export const setType = (obj, type) => {
@@ -261,3 +261,4 @@ export const getTypeString = (obj) => {
 		return '';
 	}
 }
+

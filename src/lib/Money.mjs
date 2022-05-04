@@ -29,7 +29,6 @@ export default class Money {
 		}
 		if (typeof c === 'string') {
 			if (c.indexOf('$') !== -1) {
-				console.log(c.substring(c.indexOf('$')))
 				e = -1 * c.substring(c.indexOf('.')+1).length
 				i = parseInt(c.substring(c.indexOf('$')+1).replace(/[,.]/g, ''))
 				c = c.substring(0, c.indexOf('$'))

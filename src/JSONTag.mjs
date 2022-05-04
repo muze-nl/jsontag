@@ -1,9 +1,14 @@
 import UUID from './lib/UUID.mjs'
 import Decimal from './lib/Decimal.mjs'
 import Money from './lib/Money.mjs'
-import Null from './lib/Null.mjs'
+import Link from './lib/Link.mjs'
+import Date from './lib/Date.mjs'
+import Time from './lib/Time.mjs'
+import Nil from './lib/Nil.mjs'
+
 import * as attr from './lib/functions.mjs'
 import parse from './lib/parse.mjs'
+import reviver from './lib/reviver.mjs'
 
 export default class JSONTag 
 {
@@ -12,10 +17,14 @@ export default class JSONTag
 		JSONTag.UUID = UUID
 		JSONTag.Decimal = Decimal
 		JSONTag.Money = Money
-		JSONTag.Null = Null
+		JSONTag.Link = Link
+		JSONTag.Date = Date
+		JSONTag.Time = Time
+		JSONTag.Nil = Nil
 
 		JSONTag.stringify = attr.stringify
 		JSONTag.parse = parse
+		JSONTag.reviver = reviver
 
 		JSONTag.getType = attr.getType
 		JSONTag.setType = attr.setType

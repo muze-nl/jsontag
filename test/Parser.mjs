@@ -19,11 +19,11 @@ tap.test('ParseJson', t => {
 })
 
 tap.test('ParseNull', t => {
-	let json = `<object class="Person">Null`
+	let json = `<object class="Person">Nil`
 	let result = JSONTag.parse(json)
 	t.ok(JSONTag.isNull(result))
 	t.equal(JSONTag.getType(result), 'object')
-	t.ok(result instanceof JSONTag.Null)
+	t.ok(result instanceof JSONTag.Nil)
 	t.end()
 })
 

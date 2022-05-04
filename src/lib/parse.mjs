@@ -24,7 +24,10 @@ JSONT {
     | StringyType? String
     | BooleanType? True
     | BooleanType? False
-    | Type? Null
+    | DateType? Date
+    | TimeType? Time
+    | DatetimeType? Datetime
+    | Type? Nil
   ) -- nonNull
   | "null" -- bareNull
 
@@ -58,6 +61,15 @@ JSONT {
   MoneyType =
     "<" "money" Attributes ">"
 
+  DateType = 
+  	"<" "date" Attributes ">"
+
+  TimeType = 
+  	"<" "time" Attributes ">"
+
+  DatetimeType = 
+  	"<" "datetime" Attributes ">"
+
   StringyType =
 		"<" StringyTypeNames Attributes ">"
 
@@ -70,7 +82,7 @@ JSONT {
     "timestamp" 
 
   StringyTypeNames =
-    "link" | "text" | "blob" | "color" | "date" | "email" | "hash" | "interval" | "phone" | "range" | "time" | "url" 
+    "link" | "text" | "blob" | "color" | "email" | "hash" | "interval" | "phone" | "range" | "time" | "url" 
 
   IntTypeName = 
 		"int" | "uint" | "int8" | "uint8" | "int16" | "uint16" | "int32" |
@@ -173,7 +185,11 @@ JSONT {
 
   True = "true"
   False = "false"
-  Null = "Null"
+  Nil = "Nil"
+
+  Date = digit digit digit digit "-" digit digit "-" digit digit
+  Time = digit digit ":" digit digit ":" digit digit ("." digit digit digit)?
+  Datetime = Date "T" Time
 }
 	`)
 
@@ -329,7 +345,7 @@ JSONT {
 		UUID: function(_1, e, _2) { return e.source.contents },
 		True: function (e) { return true; },
 		False: function (e) { return false; },
-		Null: function (e) { return new JSONTagTypes.Null(); }
+		Nil: function (e) { return new JSONTagTypes.Nil(); }
 	}
 	const match = JSONT.match(text);
 	if (match.failed()) {
