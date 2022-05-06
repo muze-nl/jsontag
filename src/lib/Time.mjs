@@ -49,7 +49,7 @@ export default class Time {
 
 	getSeconds()
 	{
-		return this.#time.getUTSSeconds()
+		return this.#time.getUTCSeconds()
 	}
 
 	getMilliseconds()
