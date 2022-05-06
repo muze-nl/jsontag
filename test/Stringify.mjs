@@ -24,3 +24,17 @@ tap.test('Stringify', t => {
 	t.end()
 })
 
+tap.test('Circular', t => {
+	let o = {
+		foo: {
+			bar: {
+				name: 'Bar'
+			}
+		}
+	}
+	o.foo.bar.parent = o.foo
+	let result = JSONTag.stringify(o)
+	let newO = JSONTag.parse(result)
+	t.same(o, newO)
+	t.end()
+})

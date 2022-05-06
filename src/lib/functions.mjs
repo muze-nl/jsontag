@@ -71,6 +71,9 @@ export const stringify = (value, replacer=null, space="") => {
 		if (typeof value === 'undefined' || value === null) {
 			return 'null'
 		}
+		if (typeof value === 'object') {
+			references.set(value, true)
+		}
 		if (typeof value.toJSONTag == 'function') {
 			return value.toJSONTag(references, replacer, space)
 		} else if (Array.isArray(value)) {
@@ -90,7 +93,8 @@ export const stringify = (value, replacer=null, space="") => {
 					return getTypeString(value) + jsonStringify(value, replacer, space)
 				break
 				case 'array': 
-					return getTypeString(value) + '[' + encodeEntries(value) + '}'
+					let entries = encodeEntries(value) // calculate children first so parent references can add id attribute
+					return getTypeString(value) + '[' + entries + '}'
 				break
 				case 'object': 
 					if (typeof replacer === 'function') {
@@ -99,7 +103,8 @@ export const stringify = (value, replacer=null, space="") => {
 					if (value === null) {
 						return "null"
 					}
-					return getTypeString(value) + '{' + encodeProperties(value) + '}'
+					let props = encodeProperties(value); // calculate children first so parent references can add id attribute
+					return getTypeString(value) + '{' + props + '}'
 				break
 				default:
 					throw new Error(getType(value)+' type not yet implemented')
