@@ -87,3 +87,23 @@ tap.test('Reviver', t =>{
 	t.ok(result.uuid instanceof JSONTag.UUID)
 	t.end()
 })
+
+tap.test('Types', t => {
+	let jsont = `{
+		"uuid": <uuid>"9408e2c7-8f6d-4c7a-8733-6fd50b791c86",
+		"time": <time>"12:30:45",
+		"date": <date>"1972-09-20",
+		"datetime": <datetime>"1972-09-20T12:30:45",
+		"decimal": <decimal>"1.0000001",
+		"money": <money>"EUR$123.99"
+	}`
+
+	let result = JSONTag.parse(jsont)
+	t.equal(JSONTag.getType(result.uuid), 'uuid')
+	t.equal(JSONTag.getType(result.time), 'time')
+	t.equal(JSONTag.getType(result.date), 'date')
+	t.equal(JSONTag.getType(result.datetime), 'datetime')
+	t.equal(JSONTag.getType(result.decimal), 'decimal')
+	t.equal(JSONTag.getType(result.money), 'money')
+	t.end()
+})

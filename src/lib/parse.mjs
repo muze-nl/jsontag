@@ -353,6 +353,8 @@ JSONT {
 		Nil: function (e) { return new JSONTagTypes.Nil(); },
 		Date: function(_1, e, _2) { return e.source.contents },
 		Datetime: function(_1, e1, _2, e2, _3) { return e1.source.contents+'T'+e2.source.contents },
+		Decimal: function(_1, e, _2) {	return e.source.contents },
+		Money: function(_1, c, _2, m, _3) { return c.source.contents+'$'+m.source.contents },
 		Time: function(_1, e, _2) { return e.source.contents },
 	}
 	const match = JSONT.match(text);
