@@ -146,7 +146,11 @@ export const getType = (obj) => {
 
 export const types = [
 	'object','array','string','number','boolean',				// JSON
-	'decimal','money','uuid','link','date','time','datetime'
+	'decimal','money','uuid','url','link','date','time','datetime',
+	'text', 'blob', 'color', 'email', 'hash', 'phone',
+	'int', 'int8', 'int16', 'int32', 'int64',
+	'uint', 'uint8', 'uint16', 'uint32', 'uint64',
+	'float', 'float32', 'float64'
 ]
 
 export const setType = (obj, type) => {

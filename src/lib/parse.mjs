@@ -347,6 +347,7 @@ JSONT {
 			return String.fromCharCode(parseInt(e.source.contents, 16));
 		},
 		Number: function (e) { return parseFloat(e.source.contents); },
+		Integer: function(e) { return parseInt(e.source.contents) },
 		UUID: function(_1, e, _2) { return e.source.contents },
 		True: function (e) { return true; },
 		False: function (e) { return false; },

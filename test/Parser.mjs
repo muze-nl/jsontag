@@ -95,7 +95,17 @@ tap.test('Types', t => {
 		"date": <date>"1972-09-20",
 		"datetime": <datetime>"1972-09-20T12:30:45",
 		"decimal": <decimal>"1.0000001",
-		"money": <money>"EUR$123.99"
+		"money": <money>"EUR$123.99",
+		"link": <link>"https://www.muze.nl/",
+		"url": <url>"https://www,example.org/",
+		"text": <text>"This is a longer text",
+		"blob": <blob>"Should probably be base64 encoded, but hey",
+		"color": <color>"hsl(360, 100%, 50%)",
+		"email": <email>"auke@muze.nl",
+		"hash": <hash>"Qmbq6Su7LzgYYgfQBzJUdXjgDUZZKxt4NSs4tbYwvfH8Wd",
+		"phone": <phone>"+31612345678",
+		"int": <int>255,
+		"uint": <uint>255
 	}`
 
 	let result = JSONTag.parse(jsont)
