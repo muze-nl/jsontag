@@ -166,7 +166,7 @@ Given a list of things that have worked, read: become popular or even universal,
 
 All popular formats are fundamentally limited. You cannot extend the format itself.
 
-The hypothesis, which JSONTag is trying to prove, is that by fixing the format, every implementation is also fixed, so there are no dialects. Everyone is talking the same language. Therefor, it becomes trivial to support it everywhere.
+The hypothesis, which JSONTag is trying to prove, is that by fixing the format, every implementation is also fixed, so there are no dialects. Everyone is talking the same language. Therefore, it becomes trivial to support it everywhere.
 
 Whereas more powerfull formats, which do allows for extension, e.g. XML, become fragmented.
 
