@@ -4,7 +4,7 @@ import Money from './lib/Money.mjs'
 import Link from './lib/Link.mjs'
 import Date from './lib/Date.mjs'
 import Time from './lib/Time.mjs'
-import Nil from './lib/Nil.mjs'
+import Null from './lib/Null.mjs'
 
 import * as attr from './lib/functions.mjs'
 import parse from './lib/parse.mjs'
@@ -20,7 +20,7 @@ export default class JSONTag
 		JSONTag.Link = Link
 		JSONTag.Date = Date
 		JSONTag.Time = Time
-		JSONTag.Nil = Nil
+		JSONTag.Null = Null
 
 		JSONTag.stringify = attr.stringify
 		JSONTag.parse = parse

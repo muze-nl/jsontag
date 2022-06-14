@@ -19,11 +19,11 @@ tap.test('ParseJson', t => {
 })
 
 tap.test('ParseNull', t => {
-	let json = `<object class="Person">Nil`
+	let json = `<object class="Person">null`
 	let result = JSONTag.parse(json)
 	t.ok(JSONTag.isNull(result))
 	t.equal(JSONTag.getType(result), 'object')
-	t.ok(result instanceof JSONTag.Nil)
+	t.ok(result instanceof JSONTag.Null)
 	t.end()
 })
 
@@ -40,6 +40,18 @@ tap.test('ParseJSONTag', t => {
 	t.equal(result.name, "John")
 	t.equal(JSONTag.getType(result), 'object')
 	t.equal(JSONTag.getTypeString(result), '<object class="Person">')
+	t.end()
+})
+
+tap.test('IncorrectSyntax', t => {
+	let jsont = `
+	<ob ject>{
+		"name": "John"
+	}
+	`
+	t.throws(() => {
+		let result = JSONTag.parse(jsont)
+	})
 	t.end()
 })
 

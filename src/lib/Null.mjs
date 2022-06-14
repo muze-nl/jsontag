@@ -20,7 +20,7 @@ class ExtendableProxy {
 
 }
 
-export default class Nil extends ExtendableProxy {
+export default class Null extends ExtendableProxy {
 
 	isNull = true;
 

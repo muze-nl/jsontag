@@ -12,92 +12,62 @@ JSONT {
   Start = Value
 
   Value =  
-    ( ObjectType? Object
-    | ArrayType? Array
-    | StringType? String
-    | UUIDType? UUID
-    | NumberType? Number
-    | IntType? Integer
-    | FloatType? Float
-    | DecimalType? Decimal
-    | MoneyType? Money
-    | StringyType? String
-    | BooleanType? True
-    | BooleanType? False
-    | DateType? Date
-    | TimeType? Time
-    | DatetimeType? Datetime
-    | Type? Nil
-  ) -- nonNull
-  | "null" -- bareNull
+  	"null" -- bareNull 
+  	|(
+  	  FixedType<"object">? Object
+	    | FixedType<"array">? Array
+	    | FixedType<"string">? String
+	    | FixedType<"uuid">? UUID
+	    | FixedType<"number">? Number
+	    | IntType? Integer
+	    | FloatType? Float
+	    | FixedType<"decimal">? Decimal
+	    | FixedType<"money">? Money
+	    | StringyType? String
+	    | FixedType<"boolean">? True
+	    | FixedType<"boolean">? False
+	    | FixedType<"date">? Date
+	    | FixedType<"time">? Time
+	    | FixedType<"datetime">? Datetime
+	    | AnyType? Null
+	  ) -- nonNull
 
-  ObjectType = 
-    "<" "object" Attributes ">"
-
-  ArrayType = 
-    "<" "array" Attributes ">"
-
-  StringType = 
-    "<" "string" Attributes ">"
-
-  UUIDType = 
-    "<" "uuid" Attributes ">"
-
-  NumberType = 
-    "<" "number" Attributes ">"
+  FixedType<type> = "<" type Attributes ">"
 
   IntType = 
-    "<" IntTypeName Attributes ">"
+    "<" intTypeName Attributes ">"
 
   FloatType = 
-    "<" FloatTypeName Attributes ">"
-
-  DecimalType =
-  	"<" "decimal" Attributes ">"
-
-  BooleanType = 
-    "<" "boolean" Attributes ">"
-
-  MoneyType =
-    "<" "money" Attributes ">"
-
-  DateType = 
-  	"<" "date" Attributes ">"
-
-  TimeType = 
-  	"<" "time" Attributes ">"
-
-  DatetimeType = 
-  	"<" "datetime" Attributes ">"
+    "<" floatTypeName Attributes ">"
 
   StringyType =
-		"<" StringyTypeNames Attributes ">"
+		"<" stringyTypeNames Attributes ">"
 
-  Type = 
-  	"<" TypeName Attributes ">"
+  AnyType = 
+  	"<" typeName Attributes ">"
 
-  TypeName = 
+  typeName = 
     "object" | "array" | "string" | "number" | "boolean" | "decimal" | "money" | "uuid" | 
-		StringyTypeNames | IntTypeName | FloatTypeName |  
+		stringyTypeNames | intTypeName | floatTypeName |  
     "timestamp" 
 
-  StringyTypeNames =
+  stringyTypeNames =
     "link" | "text" | "blob" | "color" | "email" | "hash" | "interval" | "phone" | "range" | "time" | "url" 
 
-  IntTypeName = 
+  intTypeName = 
 		"int" | "uint" | "int8" | "uint8" | "int16" | "uint16" | "int32" |
     "uint32" | "int64" | "uint64" 
 
-  FloatTypeName = 
+  floatTypeName = 
     "float" | "float32" | "float64"
 
   Attributes =
   	Attribute*
 
   Attribute =
-  	Name "=" stringLiteral
+  	name "=" stringLiteral
 
-  Name =
+  name =
   	letter alnum*
 
   Object =
@@ -111,19 +81,23 @@ JSONT {
     "[" "]" -- empty
     | "[" Value ("," Value)* "]" -- nonEmpty
 
-  UUID = "\\"" uuidLiteral "\\""
+  UUID = uuidLiteral
 
-  uuidLiteral = 
+  uuidLiteral = "\\"" uuidLiteralContents	"\\""
+
+  uuidLiteralContents = 
  	  hex hex hex hex hex hex hex hex "-" 
 		hex hex hex hex "-"
 		"0".."8" hex hex hex "-"
 		( "0" | "8" | "9" | "a" | "A" | "b" | "B" )
 		hex hex hex "-"
 		hex hex hex hex hex hex hex hex hex hex hex hex
-  	
+
   hex = "0".."9" | "a".."f" | "A".."F"
 
-  Money =
+  Money = moneyLiteral
+
+  moneyLiteral = 
   	"\\"" upper* "$" decimal "\\""
 
   String (String) =
@@ -151,7 +125,8 @@ JSONT {
 
   Integer = wholeNumber
 
-  Decimal = "\\"" decimal "\\""
+  Decimal = decimalLiteral 
+  decimalLiteral = "\\"" decimal "\\""
 
   Float = 
   	numberLiteral
@@ -185,13 +160,20 @@ JSONT {
 
   True = "true"
   False = "false"
-  Nil = "Nil"
 
-  Date = "\\"" dateLiteral "\\""
-  dateLiteral = digit digit digit digit "-" digit digit "-" digit digit
-  Time = "\\"" timeLiteral "\\""
-  timeLiteral = digit digit ":" digit digit ":" digit digit ("." digit digit digit)?
-  Datetime = "\\"" dateLiteral "T" timeLiteral "\\""
+  Date = dateLiteral 
+  dateLiteral = "\\"" dateLiteralContents "\\""
+  dateLiteralContents = digit digit digit digit "-" digit digit "-" digit digit
+
+  Time = timeLiteral
+  timeLiteral = "\\"" timeLiteralContents "\\"" 
+  timeLiteralContents = digit digit ":" digit digit ":" digit digit ("." digit digit digit)? 
+
+  Datetime = datetimeLiteral
+  datetimeLiteral = "\\"" datetimeLiteralContents "\\""
+  datetimeLiteralContents = dateLiteralContents "T" timeLiteralContents
+
+  Null = "null"
 }
 	`)
 
@@ -245,21 +227,12 @@ JSONT {
 		Value_bareNull: function(v) {
 			return null;
 		},
-		Type: parseType,
-		ObjectType: parseType,
-		ArrayType: parseType,
+		FixedType: parseType,
+		AnyType: parseType,
 		StringyType: parseType,
-		UUIDType: parseType,
-		NumberType: parseType,
 		IntType: parseType,
 		FloatType: parseType,
-		DecimalType: parseType,
-		MoneyType: parseType,
-		BooleanType: parseType,
-		DateType: parseType,
-		DatetimeType: parseType,
-		TimeType: parseType,
-		Name: function(l, a) {
+		name: function(l, a) {
 			return l.source.contents + a.children.map(c => c.source.contents).join("")
 		},
 		Attributes: function(a) {
@@ -348,15 +321,17 @@ JSONT {
 		},
 		Number: function (e) { return parseFloat(e.source.contents); },
 		Integer: function(e) { return parseInt(e.source.contents) },
-		UUID: function(_1, e, _2) { return e.source.contents },
+		uuidLiteral: function(_1, e, _2) { return e.source.contents },
 		True: function (e) { return true; },
 		False: function (e) { return false; },
-		Nil: function (e) { return new JSONTagTypes.Nil(); },
-		Date: function(_1, e, _2) { return e.source.contents },
-		Datetime: function(_1, e1, _2, e2, _3) { return e1.source.contents+'T'+e2.source.contents },
-		Decimal: function(_1, e, _2) {	return e.source.contents },
-		Money: function(_1, c, _2, m, _3) { return c.source.contents+'$'+m.source.contents },
-		Time: function(_1, e, _2) { return e.source.contents },
+		Null: function (e) { 
+			return new JSONTagTypes.Null() 
+		},
+		dateLiteral: function(_1, e, _2) { return e.source.contents },
+		datetimeLiteral: function(_1, e, _2) { return e.source.contents },
+		decimalLiteral: function(_1, e, _2) {	return e.source.contents },
+		moneyLiteral: function(_1, c, _2, m, _3) { return c.source.contents+'$'+m.source.contents },
+		timeLiteral: function(_1, e, _2) { return e.source.contents },
 	}
 	const match = JSONT.match(text);
 	if (match.failed()) {
