@@ -107,6 +107,8 @@ Any access to other properties or methods results in an exception
 
 Because JSONTag now can keep type and attribute information, you could create your own typed Null object when reviving JSONTag data.
 
+JSONTag.parse() only creates a JSONTag.Null object if the stringified version has a tag, otherwise it will just return a normal null.
+
 ## Monkeypatching
 
 Upgrade a program to use JSONTag by:
