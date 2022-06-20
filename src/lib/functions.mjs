@@ -84,10 +84,34 @@ export const stringify = (value, replacer=null, space="") => {
 				case 'decimal':
 				case 'money':
 				case 'link':
+				case 'text':
+				case 'blob':
+				case 'color':
+				case 'email':
+				case 'hash':
+				case 'interval':
+				case 'phone':
 				case 'url':
 				case 'uuid':
+				case 'date':
+				case 'time':
+				case 'datetime':
 					return getTypeString(value) + jsonStringify(''+value, replacer, space)
 				break
+				case 'int':
+				case 'uint':
+				case 'int8':
+				case 'uint8':
+				case 'int16':
+				case 'uint16':
+				case 'int32':
+				case 'uint32':
+				case 'int64':
+				case 'uint64':
+				case 'float':
+				case 'float32':
+				case 'float64':
+				case 'timestamp':
 				case 'number':
 				case 'boolean':
 					return getTypeString(value) + jsonStringify(value, replacer, space)
@@ -146,7 +170,7 @@ export const getType = (obj) => {
 
 export const types = [
 	'object','array','string','number','boolean',				// JSON
-	'decimal','money','uuid','url','link','date','time','datetime',
+	'decimal','money','uuid','url','link','date','time','datetime', 'interval', 'timestamp',
 	'text', 'blob', 'color', 'email', 'hash', 'phone',
 	'int', 'int8', 'int16', 'int32', 'int64',
 	'uint', 'uint8', 'uint16', 'uint32', 'uint64',
