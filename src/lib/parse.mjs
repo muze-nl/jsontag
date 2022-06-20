@@ -29,6 +29,7 @@ JSONT {
 	    | FixedType<"date">? Date
 	    | FixedType<"time">? Time
 	    | FixedType<"datetime">? Datetime
+	    | FixedType<"timestamp">? wholeNumber
 	    | AnyType? Null
 	  ) -- nonNull
 
@@ -47,19 +48,19 @@ JSONT {
   	"<" typeName Attributes ">"
 
   typeName = 
-    "object" | "array" | "string" | "number" | "boolean" | "decimal" | "money" | "uuid" | 
-		stringyTypeNames | intTypeName | floatTypeName |  
-    "timestamp" 
+    "object" | "array" | "string" | "number" | "boolean" | "decimal" | "money" | "uuid" | "timestamp" |
+		stringyTypeNames | intTypeName | floatTypeName 
+    
 
   stringyTypeNames =
     "link" | "text" | "blob" | "color" | "email" | "hash" | "interval" | "phone" | "range" | "time" | "url" 
 
   intTypeName = 
-		"int" | "uint" | "int8" | "uint8" | "int16" | "uint16" | "int32" |
-    "uint32" | "int64" | "uint64" 
+		"int8" | "uint8" | "int16" | "uint16" | "int32" |
+    "uint32" | "int64" | "uint64" | "int" | "uint" 
 
   floatTypeName = 
-    "float" | "float32" | "float64"
+    "float32" | "float64" | "float"
 
   Attributes =
   	Attribute*
@@ -319,7 +320,8 @@ JSONT {
 		escapeSequence_codePoint: function (_, e) {
 			return String.fromCharCode(parseInt(e.source.contents, 16));
 		},
-		Number: function (e) { return parseFloat(e.source.contents); },
+		numberLiteral: function (e) { return parseFloat(e.source.contents); },
+		wholeNumber: function(e) { return parseInt(e.source.contents)},
 		Integer: function(e) { return parseInt(e.source.contents) },
 		uuidLiteral: function(_1, e, _2) { return e.source.contents },
 		True: function (e) { return true; },
