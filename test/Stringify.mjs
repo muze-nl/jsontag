@@ -13,13 +13,12 @@ tap.test('Stringify', t => {
 	t.end()
 })
 
-tap.test('Stringify', t => {
-	let o = {
-		'name': 'John'
-	}
+tap.test('Stringify2', t => {
+	let o = JSONTag.parse('<object class="Person">{"name":"John","dob":<date>"1972-09-20"}')
 	let result = JSONTag.stringify(o, null, 4)
-	t.equal(result, `{
-    "name":"John"
+	t.equal(result, `<object class="Person">{
+    "name":"John",
+    "dob":<date>"1972-09-20"
 }`)
 	t.end()
 })
@@ -38,3 +37,48 @@ tap.test('Circular', t => {
 	t.same(o, newO)
 	t.end()
 })
+ tap.test('Types', t => {
+ 	let types = {
+ 		'string':'string',
+ 		'decimal':'10.50',
+ 		'money':'EUR$10.50',
+ 		'link':'#link',
+ 		'text':'text',
+ 		'blob':'dGV4dA==',
+ 		'color':'hsl(255,90,90)',
+ 		'email':'someone@example.com',
+ 		'hash':'2bb80d537b1da3e38bd30361aa855686bde0eacd7162fef6a25fe97bf527a25b',
+ 		'interval':'P15D',
+ 		'phone':'0031612345678',
+ 		'url':'https://www.example.org/',
+ 		'uuid':'0786f031-ffba-4dfc-92de-37dc441d5224',
+ 		'date':'1901-01-01',
+ 		'time':'12:00:30',
+ 		'datetime':'1970-01-01T01:00:00',
+ 		'int':-1025,
+ 		'uint':1025,
+ 		'int8':-128,
+ 		'uint8':255,
+ 		'int16':-32768,
+ 		'uint16':65535,
+ 		'int32':-2147483648,
+ 		'uint32':4294967295,
+ 		'int64':-9223372036854775808,
+ 		'uint64':18446744073709551615,
+ 		'float':0.1,
+ 		'float32':0.2,
+ 		'float64':0.3,
+ 		'timestamp':1655729149,
+ 		'number': 10e1,
+ 		'boolean':true,
+ 		'array':[1,2,3],
+ 		'object':{name:'John'}
+ 	}
+ 	Object.keys(types).forEach(type => {
+ 		t.same(
+ 			JSONTag.stringify(JSONTag.parse('<'+type+' class="test">'+JSON.stringify(types[type])))
+ 			,'<'+type+' class="test">'+JSON.stringify(types[type])
+ 		)
+ 	})
+ 	t.end()
+ })
