@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head>
+<title>JSONTag browser test</title>
+</head>
+<body>
+<h1>JSONTag browser test</h1>
+
+<pre id="output"></pre>
+<script src="../dist/browser.js"></script>
+<script>
+
+let jsont = '<object class="Person">{"name":"John"}'
+let data = JSONTag.parse(jsont)
+document.getElementById('output').innerText = JSONTag.stringify(data, null, 4)
+
+</script>
+</body>
+</html>

@@ -1,4 +1,10 @@
-import * as uuid from 'uuid'
+if (typeof crypto === 'undefined') {
+	try {
+		var crypto = await import('node:crypto')
+	} catch(err) {
+		// ignore errors, we might not be in node environment
+	}
+}
 
 // keep reference to original JSON.stringify, in case someone monkeypatches it
 const jsonStringify = JSON.stringify
@@ -143,7 +149,17 @@ export const stringify = (value, replacer=null, space="") => {
 }
 
 function createId(value) {
-	let id = uuid.v4()
+	if (typeof crypto === 'undefined') {
+		console.error('JSONTag: cannot generate uuid, crypto support is disabled.')
+		throw new Error('Cannot create links to resolve references, crypto support is disabled')
+	}
+	if (typeof crypto.randomUUID === 'function') {
+		var id = crypto.randomUUID()
+	} else {
+		var id = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+			(c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+		);
+	}
 	setAttribute(value, 'id', id)
 	return id
 }
