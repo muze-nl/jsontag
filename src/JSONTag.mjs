@@ -14,27 +14,28 @@ export default class JSONTag
 {
 
 	static {
-		JSONTag.UUID = UUID
+		JSONTag.UUID    = UUID
 		JSONTag.Decimal = Decimal
-		JSONTag.Money = Money
-		JSONTag.Link = Link
-		JSONTag.Date = Date
-		JSONTag.Time = Time
-		JSONTag.Null = Null
+		JSONTag.Money   = Money
+		JSONTag.Link    = Link
+		JSONTag.Date    = Date
+		JSONTag.Time    = Time
+		JSONTag.Null    = Null
 
 		JSONTag.stringify = attr.stringify
-		JSONTag.parse = parse
-		JSONTag.reviver = reviver
+		JSONTag.parse     = parse
+		JSONTag.reviver   = reviver
 
-		JSONTag.getType = attr.getType
-		JSONTag.setType = attr.setType
+		JSONTag.getType       = attr.getType
+		JSONTag.setType       = attr.setType
 		JSONTag.getTypeString = attr.getTypeString
-		JSONTag.setAttribute = attr.setAttribute
-		JSONTag.getAttribute = attr.getAttribute
-		JSONTag.addAttribute = attr.addAttribute
-		JSONTag.removeAttribute = attr.removeAttribute
-		JSONTag.getAttributes = attr.getAttributes
-		JSONTag.setAttributes = attr.setAttributes
+
+		JSONTag.setAttribute        = attr.setAttribute
+		JSONTag.getAttribute        = attr.getAttribute
+		JSONTag.addAttribute        = attr.addAttribute
+		JSONTag.removeAttribute     = attr.removeAttribute
+		JSONTag.getAttributes       = attr.getAttributes
+		JSONTag.setAttributes       = attr.setAttributes
 		JSONTag.getAttributesString = attr.getAttributesString
 		
 		JSONTag.isNull = attr.isNull
