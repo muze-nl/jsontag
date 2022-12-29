@@ -32,6 +32,7 @@ export default class JSONTag
 		JSONTag.setAttribute = attr.setAttribute
 		JSONTag.getAttribute = attr.getAttribute
 		JSONTag.addAttribute = attr.addAttribute
+		JSONTag.removeAttribute = attr.removeAttribute
 		JSONTag.getAttributes = attr.getAttributes
 		JSONTag.setAttributes = attr.setAttributes
 		JSONTag.getAttributesString = attr.getAttributesString
