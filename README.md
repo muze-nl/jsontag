@@ -31,8 +31,8 @@ In the browser:
 <script>
     let p = JSONTag.parse('<object class="Person">{"name":"John"}')
     let s = JSONTag.stringify(p)
-	let type = JSONTag.getType(p) // 'object'
-	let className = JSONTag.getAttribute(p, 'class') // 'Person'
+    let type = JSONTag.getType(p) // 'object'
+    let className = JSONTag.getAttribute(p, 'class') // 'Person'
 </script>
 ```
 

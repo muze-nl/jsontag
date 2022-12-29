@@ -194,6 +194,9 @@ export const types = [
 ]
 
 export const setType = (obj, type) => {
+	if (typeof obj !== 'object') {
+		throw new TypeError('JSONTag can only add attributes to objects, convert literals to objects first')
+	}
 	let info = {}
 	if (typeInfo.has(obj)) {
 		info = typeInfo.get(obj)
@@ -209,6 +212,9 @@ export const setType = (obj, type) => {
 }
 
 export const setAttribute = (obj, attr, value) => {
+	if (typeof obj !== 'object') {
+		throw new TypeError('JSONTag can only add attributes to objects, convert literals to objects first')
+	}
 	if (Array.isArray(value)) {
 		value = value.join(' ')
 	}
@@ -227,6 +233,9 @@ export const setAttribute = (obj, attr, value) => {
 }
 
 export const setAttributes = (obj, attributes) => {
+	if (typeof obj !== 'object') {
+		throw new TypeError('JSONTag can only add attributes to objects, convert literals to objects first')
+	}
 	if (typeof attributes !== 'object') {
 		throw new TypeError('attributes param must be an object')
 	}
