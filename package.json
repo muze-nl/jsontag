@@ -1,6 +1,6 @@
 {
   "name": "@muze-nl/jsontag",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "tagged json library",
   "type": "module",
   "main": "src/JSONTag.mjs",
