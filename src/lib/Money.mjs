@@ -1,4 +1,5 @@
 import Decimal from './Decimal.mjs'
+import { getAttributesString } from "./functions.mjs"
 
 export default class Money {
 

@@ -1,3 +1,5 @@
+import { getAttributesString } from "./functions.mjs"
+
 function toISOTime(t) {
 	let time     = new Date(t) 
 	let hours    = '0'+time.getUTCHours()

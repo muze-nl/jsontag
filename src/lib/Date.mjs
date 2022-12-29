@@ -1,9 +1,10 @@
+import { getAttributesString } from "./functions.mjs"
+
 function getISODate(epoch)
 {
 	let date  = new Date(epoch)
-	let year  = '000'+date.getYear()
-	year      = year.substring(year.length-4)
-	let month = '0'+date.getMonth()
+	let year  = date.getFullYear()
+	let month = '0'+(date.getMonth()+1) // january gives 0
 	month     = month.substring(month.length-2)
 	let days  = '0'+date.getDate()
 	days      = days.substring(days.length-2)

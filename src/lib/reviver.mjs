@@ -1,4 +1,4 @@
-import { getType, isNull } from './functions.mjs'
+import { setType, setAttributes, getAttributes, getType, isNull } from './functions.mjs'
 import JSONTagTypes from './types.mjs'
 
 export default function reviver(key, value, meta)
@@ -17,7 +17,16 @@ export default function reviver(key, value, meta)
 		return value
 	}
 	if (alltypes[type]) {
-		return JSONTagTypes[alltypes[type]].from(value)
+		let type = getType(value)
+		let attributes = getAttributes(value)
+		let result = JSONTagTypes[alltypes[type]].from(value)
+		if (type) {
+			setType(result, type)
+		}
+		if (Object.keys(attributes).length) {
+			setAttributes(result, attributes)
+		}
+		return result
 	}
 	return value;
 }
