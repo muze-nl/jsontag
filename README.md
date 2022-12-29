@@ -31,6 +31,8 @@ In the browser:
 <script>
     let p = JSONTag.parse('<object class="Person">{"name":"John"}')
     let s = JSONTag.stringify(p)
+	let type = JSONTag.getType(p) // 'object'
+	let className = JSONTag.getAttribute(p, 'class') // 'Person'
 </script>
 ```
 
@@ -40,7 +42,134 @@ import JSONTag from 'JSONTag'
 
 let p = JSONTag.parse('<object class="Person">{"name":"John"}')
 let s = JSONTag.stringify(p)
+let type = JSONTag.getType(p) // 'object'
+let className = JSONTag.getAttribute(p, 'class') // 'Person'
 ```
+
+
+## API Reference
+
+### parse
+
+> `JSONTag.parse(stringValue, reviver)`
+
+`JSONTag.parse` works identical to [`JSON.parse`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse) and is backwards compatible with `JSON` strings.
+
+### stringify
+
+> `JSONTag.stringify(value, replacer, space)`
+
+`JSONTag.stringify` works identically to [`JSON.stringify`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify). But in addition it also can stringify circular references and it will also codify any types or attributes set on values with the `setType` and `setAttribute` methods.
+
+### getType
+
+> `JSONTag.getType(value)`
+
+This function will return the type of the value. It will return the normal JSON types, e.g: `string`, `number`, `boolean`, `array`, `object`. But if the value has been annotated with `setType`, it will return that instead.
+
+### setType
+
+> `JSONTag.setType(value, type)`
+
+This will annotate the value as being of type `type`. Valid types are: 
+`object`,`array`,`string`,`number`,`boolean`,
+`decimal`,`money`,`uuid`,`url`,`link`,`date`,`time`,`datetime`, `interval`, `timestamp`,
+`text`, `blob`, `color`, `email`, `hash`, `phone`,
+`int`, `int8`, `int16`, `int32`, `int64`,
+`uint`, `uint8`, `uint16`, `uint32`, `uint64`,
+`float`, `float32`, `float64`
+
+### getAttribute
+
+> `JSONTag.getAttribute(value, attributeName)`
+
+This will return the attribute value as a string, or `undefined`.
+
+```javascript
+let p = JSONTag.parse('<object class="Person">{"name":"John"}')
+let className = JSONTag.getAttribute(p, 'class') // 'Person'
+let id = JSONTag.getAttribute(p, 'id') // undefined
+```
+
+### setAttribute
+
+> `JSONTag.setAttribute(value, attributeName, attributeValue)`
+
+This will set the attribute `attributeName` to the given `attributeValue`. If you pass an array of strings as `attributeValue`, the array will be joined using a space character and the result set as attributeValue.
+
+```javascript
+let p = JSONTag.parse('{"name":"John"}')
+JSONTag.setAttribute(p, 'class', 'Person')
+let s = JSONTag.stringify(p) // '<object class="Person">{"name":"John"}'
+```
+
+### addAttribute
+
+> `JSONTag.addAttribute(value, attributeName, attributeValue)`
+
+This method differs from `setAttribute` in that it will append the `attributeValue` to an existing attribute, if the attribute with that `attributeName` is already present.
+
+```javascript
+let p = JSONTag.parse('<object class="Person">{"name":"John"}')
+JSONTag.addAttribute(p, 'class', 'Employee')
+let s = JSONTag.stringify(p) // '<object class="Person Employee">{"name":"John"}'
+```
+
+### removeAttribute
+
+> `JSONTag.removeAttribute(value, attributeName)`
+
+This will remove the entire attribute from the tag for the given value.
+
+```javascript
+let p = JSONTag.parse('<object class="Person">{"name":"John"}')
+JSONTag.removeAttribute(p, 'class')
+let s = JSONTag.stringify(p) // '{"name":"John"}'
+```
+
+### getAttributes
+
+> `JSONTag.getAttributes(value)`
+
+This will return an object with all attributes and attribute values.
+
+```javascript
+let p = JSONTag.parse('<object class="Person">{"name":"John"}')
+let attrs = JSONTag.getAttributes(p) // { class: "Person" }
+```
+
+### isNull
+
+> `JSONTag.isNull(value)`
+
+This will return `true` if the value is either `null` or an instance of the `JSONTag.Null` object. JSONTag adds a Null class, to allow you to add attributes to it. The javascript and JSON `null` value is special in that all `null` values are identical. This doesn't allow you to add attributes to a specific `null`.
+
+```javascript
+let p = JSONTag.parse('<object class="Person">null')
+let className = JSONTag.getAttribute(p, 'class')
+if (JSONTag.isNull(p)) {
+	console.log('null object with class '+className)
+} else {
+	console.log('normal object with class '+className)
+}
+```
+
+### reviver
+
+> `JSONTag.reviver(key, value, meta)`
+
+This method can be supplied to `JSONTag.parse` to instantiate the JSONTag provided classes: `UUID`, `Link`, `Date`, `Time`, `Datetime`, `Decimal` and `Money`. 
+
+```javascript
+let s = `{
+	"id": <uuid>"03d971b8-1d72-4b52-872d-21bd004d6df8",
+	"name": "Joe",
+	"dob": <date>"1972-09-20"
+}`
+let r = JSONTag.parse(s, JSONTag.reviver)
+let year = r.dob.getFullYear() // 1972
+```
+
 
 ## JSONTag Types
 
