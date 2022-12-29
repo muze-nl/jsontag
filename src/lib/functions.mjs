@@ -67,6 +67,9 @@ export const stringify = (value, replacer=null, space="") => {
 
 	const str = (key, holder) => {
 		let value = holder[key]
+		if (typeof replacer === 'function' && key!=='') {
+			value = replacer.call(holder, key, value)
+		}
 		if (typeof value === 'object' && references.has(value)) {
 			let id = getAttribute(value, 'id')
 			if (!id) {
@@ -127,9 +130,6 @@ export const stringify = (value, replacer=null, space="") => {
 					return getTypeString(value) + '[' + entries + '}'
 				break
 				case 'object': 
-					if (typeof replacer === 'function') {
-						value = replacer.call(holder, key, value)
-					}
 					if (value === null) {
 						return "null"
 					}
