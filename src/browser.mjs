@@ -18,6 +18,7 @@ window.JSONTag = {
 	setAttribute: attr.setAttribute,
 	getAttribute: attr.getAttribute,
 	addAttribute: attr.addAttribute,
+	removeAttribute: attr.removeAttribute,
 	getAttributes: attr.getAttributes,
 	setAttributes: attr.setAttributes,
 	getAttributesString: attr.getAttributesString,
