@@ -409,37 +409,35 @@ I've used the simplified ISO 8601 format as described in RFC 3339, since it allo
 
 Using floats for monetary values is one of the most common and costly mistakes beginning programmers make. So I've added explicit decimal and money types to JSONTag to help avoid that. I've encoded them as string values, instead of number values, to make explicit that they aren't floats, even if you remove all tags from a JSONTag file.
 
-### Nil and null
+### null
 
 There are many articles and papers written about the problems with `null`. I would like it if JSONTag could somehow improve the situation. However a clear and non-negiotable line in the sand was that JSONTag must be 100% backwards compatible with JSON. So JSONTag must support the `null` value exactly as JSON does.
 
 This means that all `null` values are identical. And therefor JSONTag cannot add tags to null values. Or at least, if it did, each tagged null value would have to become something other than the javascript `null` object.
 
-So instead I've added support for typed null objects with the keyword `Nil`. This is the only case where I've introduced a value that is not JSON compatible. e.g.:
+The solution here is that by adding a tag to a null value, the null is translated to a Null object on parsing. E.g:
 
 ```
 {
-	"foo": Nil
+	"foo": null
 }
 ```
 
-The above is valid JSONTag, but not valid JSON, even though it doesn't use tags. In this case you would not use `Nil`, since it is only useful if you do add a tag, e.g:
+The above is handled just like it would be in JSON. The resulting value for `foo` is `null`. However:
 
 ```
 {
-	"foo": <object class="person">Nil
+	"foo": <object class="person">null
 }
 ```
 
-Now it makes much more sense. `"foo"` is a reference to Person object, currently empty. A parser could now interpret this to create a `NullPerson` instance, which at least gives you the option to keep the `Person` semantics intact, even though there is no person linked yet.
+This turns `foo` into a `Null` object, an instance of the class `JSONTag.Null`. However `JSONTag.getType(foo)` will still return `object`, and `JSONTag.getAttribute(foo, 'class')` will return `"Person"`.
 
-The current parser will automatically create an instance of the JSONTag.Nil class whenever it encounters a Nil value. You can override this in a reviver function.
-
-The choice to use Nil here instead of null, may change in the future. The parser could just as easily parse `<object class="Person">null` in the same way. The fact that there is a tag can be construed to force a Null object when parsing. For now this is invalid JSONTag and the parser will object.
+The current parser will automatically create an instance of the JSONTag.Null class whenever it encounters a tagged null value. You can override this in a reviver function.
 
 ### JSONTag Type classes
 
-I've opted not to construct objects with specific classes based on the type of tag it was encoded with. Instead the default value that JSONTag.parse will return is exactly the same as JSON.parse would return, if not tags were set. With the only exception being the `Nil` value, as JSON doesn't have that.
+I've opted not to construct objects with specific classes based on the type of tag it was encoded with. Instead the default value that JSONTag.parse will return is exactly the same as JSON.parse would return, if no tags were set. 
 
 The idea is to make it as simple as possible to retrofit any current codebase to use JSONTag instead of JSON. 
 
@@ -447,4 +445,4 @@ Instead there is a set of JSONTag functions that you can use to find out what ty
 
 If you do want to create specific classes of objects based on the tag or attributes, you can do so in your own reviver function. Or if you want to use the classes provided with JSONTag, you can use `JSONTag.reviver` as the reviver function.
 
-The purpose of the type classe provided with JSONTag is mostly documentary. It is to document in code what the semantics, the workings of each type is supposed to be. So they have been kept purposely small and simple. They are also immutable by default, following the [value object](https://en.wikipedia.org/wiki/Value_object) paradigm from Domain-Driven Design (DDD)
+The purpose of the type classes provided with JSONTag is mostly documentary. It is to document in code what the semantics, the workings of each type is supposed to be. So they have been kept purposely small and simple. They are also immutable by default, following the [value object](https://en.wikipedia.org/wiki/Value_object) paradigm from Domain-Driven Design (DDD)
