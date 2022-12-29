@@ -27,7 +27,7 @@ npm install @muze-nl/JSONTag
 In the browser:
 
 ```html
-<script src="/node_modules/JSONT/dist/browser.js"></script>
+<script src="/node_modules/JSONTag/dist/browser.js"></script>
 <script>
     let p = JSONTag.parse('<object class="Person">{"name":"John"}')
     let s = JSONTag.stringify(p)
