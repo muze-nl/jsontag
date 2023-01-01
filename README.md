@@ -38,7 +38,7 @@ In the browser:
 
 In node:
 ```javascript
-import JSONTag from 'JSONTag'
+import JSONTag from '@muze-nl/jsontag'
 
 let p = JSONTag.parse('<object class="Person">{"name":"John"}')
 let s = JSONTag.stringify(p)
