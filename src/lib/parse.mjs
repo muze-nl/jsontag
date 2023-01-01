@@ -1,5 +1,5 @@
 import * as JSONTag from './functions.mjs'
-import JSONTagTypes from './types.mjs'
+import Null from './Null.mjs'
 import ohm from 'ohm-js'
 
 export default function parse(text, reviver) {
@@ -327,7 +327,7 @@ JSONT {
 		True: function (e) { return true; },
 		False: function (e) { return false; },
 		Null: function (e) { 
-			return new JSONTagTypes.Null() 
+			return new Null() 
 		},
 		dateLiteral: function(_1, e, _2) { return e.source.contents },
 		datetimeLiteral: function(_1, e, _2) { return e.source.contents },

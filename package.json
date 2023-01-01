@@ -1,6 +1,6 @@
 {
   "name": "@muze-nl/jsontag",
-  "version": "0.5.1",
+  "version": "0.6",
   "description": "tagged json library",
   "type": "module",
   "main": "src/JSONTag.mjs",
@@ -28,9 +28,7 @@
     }
   },
   "dependencies": {
-    "ohm-js": "^16.3.2",
-    "parcel": "^2.4.1",
-    "uuid": "^8.3.2"
+    "ohm-js": "^16.3.2"
   },
   "devDependencies": {
     "buffer": "^6.0.3",

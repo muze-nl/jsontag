@@ -1,4 +1,5 @@
 import JSONTag from '../src/JSONTag.mjs'
+import Null from '../src/lib/Null.mjs'
 import tap from 'tap'
 
 tap.test('ParseJson', t => {
@@ -23,7 +24,7 @@ tap.test('ParseNull', t => {
 	let result = JSONTag.parse(json)
 	t.ok(JSONTag.isNull(result))
 	t.equal(JSONTag.getType(result), 'object')
-	t.ok(result instanceof JSONTag.Null)
+	t.ok(result instanceof Null)
 	t.end()
 })
 
@@ -88,15 +89,15 @@ tap.test('Link2', t => {
 
 tap.test('Reviver', t =>{
 	let jsont = `{
-		"uuid": <uuid>"9408e2c7-8f6d-4c7a-8733-6fd50b791c86"
+		"date": <date>"1972-09-20"
 	}`
 	let result = JSONTag.parse(jsont, (key, value, meta) => {
-		if (key==='uuid') {
-			return new JSONTag.UUID(value)
+		if (key==='date') {
+			return new Date(value)
 		}
 		return value;
 	})
-	t.ok(result.uuid instanceof JSONTag.UUID)
+	t.ok(result.date instanceof Date)
 	t.end()
 })
 

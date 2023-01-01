@@ -1,15 +1,8 @@
-import UUID from './lib/UUID.mjs'
-import Decimal from './lib/Decimal.mjs'
-import Money from './lib/Money.mjs'
 import Null from './lib/Null.mjs'
 import * as attr from './lib/functions.mjs'
 import parse from './lib/parse.mjs'
-import reviver from './lib/reviver.mjs'
 
 window.JSONTag = {
-	UUID: UUID,
-	Decimal: Decimal,
-	Money: Money,
 	Null: Null,
 	stringify: attr.stringify,
 	parse: parse,
@@ -24,5 +17,4 @@ window.JSONTag = {
 	setAttributes: attr.setAttributes,
 	getAttributesString: attr.getAttributesString,
 	isNull: attr.isNull,
-	reviver: reviver
 }

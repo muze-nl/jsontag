@@ -46,6 +46,14 @@ let type = JSONTag.getType(p) // 'object'
 let className = JSONTag.getAttribute(p, 'class') // 'Person'
 ```
 
+## Changing and building dist files
+
+I've been using parcel to create the simplest build config that I could. Simply run this command to create the dist files:
+
+```shell
+npx parcel build
+```
+
 
 ## API Reference
 
@@ -152,22 +160,6 @@ if (JSONTag.isNull(p)) {
 } else {
 	console.log('normal object with class '+className)
 }
-```
-
-### reviver
-
-> `JSONTag.reviver(key, value, meta)`
-
-This method can be supplied to `JSONTag.parse` to instantiate the JSONTag provided classes: `UUID`, `Link`, `Date`, `Time`, `Datetime`, `Decimal` and `Money`. 
-
-```javascript
-let s = `{
-	"id": <uuid>"03d971b8-1d72-4b52-872d-21bd004d6df8",
-	"name": "Joe",
-	"dob": <date>"1972-09-20"
-}`
-let r = JSONTag.parse(s, JSONTag.reviver)
-let year = r.dob.getFullYear() // 1972
 ```
 
 
@@ -443,6 +435,4 @@ The idea is to make it as simple as possible to retrofit any current codebase to
 
 Instead there is a set of JSONTag functions that you can use to find out what type a value was encoded as, or which attributes were added to a value. This is why I did not call it 'Typed JSON' (besides that the name was already taken), but 'Tagged JSON'. It is the most minimally intrusive addition I could find, which still enables advanced usages like adding meaning to data, without touching the data itself.
 
-If you do want to create specific classes of objects based on the tag or attributes, you can do so in your own reviver function. Or if you want to use the classes provided with JSONTag, you can use `JSONTag.reviver` as the reviver function.
-
-The purpose of the type classes provided with JSONTag is mostly documentary. It is to document in code what the semantics, the workings of each type is supposed to be. So they have been kept purposely small and simple. They are also immutable by default, following the [value object](https://en.wikipedia.org/wiki/Value_object) paradigm from Domain-Driven Design (DDD)
+If you do want to create specific classes of objects based on the tag or attributes, you can do so in your own reviver function. There is an optional module called '@muze-nl/JSONTagTypes', which provide a set of classes matching the JSONTag types, including a reviver function. See [JSONTagType](https://github.com/poef/jsontag-types)

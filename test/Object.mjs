@@ -29,8 +29,3 @@ tap.test('Class2', t => {
 	t.end()
 })
 
-tap.test('foo', t => {
-	let d = new JSONTag.UUID('5d98b6e3-8feb-4163-be4d-c56446371e89')
-	//TODO
-	t.end()
-})
