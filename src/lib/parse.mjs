@@ -208,14 +208,16 @@ JSONT {
 				if (!JSONTagType.type) {
 					JSONTagType.type = typeof value
 				}
-				if (typeof value === "string") {
-					value = new String(value)
-				}
-				if (typeof value === "number") {
-					value = new Number(value)
-				}
-				if (typeof value === "boolean") {
-					value = new Boolean(value)
+				switch(typeof value) {
+					case 'string':
+						value = new String(value)
+						break
+					case 'number':
+						value = new Number(value)
+						break
+					case 'boolean':
+						value = new Boolean(value)
+						break
 				}
 				JSONTag.setType(value, JSONTagType.type)
 				JSONTag.setAttributes(value, JSONTagType.attributes)
@@ -268,6 +270,9 @@ JSONT {
 			for (var i = 0; i < xs.children.length; i++) {
 				var c = xs.children[i];
 				k = c.children[0].parse();
+				if (k==='__proto__') {
+					throw new Error('Attempt at prototype pollution')
+				}
 				v = c.children[2].parse();
 				out[k] = v;
 				if (JSONTag.getType(v)==='link') {

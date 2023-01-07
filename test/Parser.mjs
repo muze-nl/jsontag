@@ -130,3 +130,21 @@ tap.test('Types', t => {
 	t.equal(JSONTag.getType(result.money), 'money')
 	t.end()
 })
+
+tap.test('Prototype Pollution', t => {
+	let jsont = `{
+	"foo": "bar",
+	"__proto__": {
+		"admin": true
+	}
+}`
+	let result = null
+	try {
+		result = JSONTag.parse(jsont)
+	} catch(e) {
+		t.equal(e.message, 'Attempt at prototype pollution')
+	}
+	t.equal(result, null)
+	t.end()
+
+})
