@@ -24,6 +24,10 @@ export default class JSONTag
 		JSONTag.getAttributesString = attr.getAttributesString
 		
 		JSONTag.isNull = attr.isNull
+
+		JSONTag.Link = Link
+		JSONTag.Null = Null
+
 	}
 
 }
