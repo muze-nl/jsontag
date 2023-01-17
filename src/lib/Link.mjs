@@ -5,6 +5,9 @@ export default class Link {
 
 	constructor(url)
 	{
+		if (typeof url !== 'string') {
+			throw new Error('not a url:',url)
+		}
 		this.#url = ''+url
 	}
 
@@ -12,6 +15,9 @@ export default class Link {
 	{
 		if (url instanceof Link) {
 			return url
+		}
+		if (typeof url !== 'string') {
+			throw new Error('not a url:',url)
 		}
 		return new Link(url)
 	}

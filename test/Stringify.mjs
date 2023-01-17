@@ -82,3 +82,25 @@ tap.test('Circular', t => {
  	})
  	t.end()
  })
+
+ tap.test('Links', t => {
+ 	let jsont=`{
+    "foo":[
+        <object class="foo" id="1">{
+            "name":"Foo"
+        }
+    ],
+    "bar":[
+        <object class="bar" id="2">{
+            "name":"Bar",
+            "children":[
+                <link>"#1"
+            ]
+        }
+    ]
+}`
+	let o = JSONTag.parse(jsont);
+	let s = JSONTag.stringify(o,null,4)
+	t.equal(jsont,s)
+	t.end()
+ })
