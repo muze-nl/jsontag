@@ -320,3 +320,16 @@ export const getTypeString = (obj) => {
 	}
 }
 
+export const clone = (obj) => {
+	let type = getType(obj)
+	let attributes = getAttributes(obj)
+	let clone = Object.assign({}, obj)
+	if (type && type!=='object') {
+		setType(clone, type)
+	}
+	if (attributes) {
+		setAttributes(clone, attributes)
+	}
+	return clone
+}
+

@@ -24,6 +24,7 @@ export default class JSONTag
 		JSONTag.getAttributesString = attr.getAttributesString
 		
 		JSONTag.isNull = attr.isNull
+		JSONTag.clone  = attr.clone
 
 		JSONTag.Link = Link
 		JSONTag.Null = Null
