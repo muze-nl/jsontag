@@ -4,14 +4,7 @@ import tap from 'tap'
 
 tap.test('ParseJson', t => {
 	let json = `
-	{
-		"name":"John",
-		"foo":{
-			"bar":true
-		}, 
-		"baz": null, 
-		"florb": 1.234
-	}`
+{"name":"John","foo":{"bar":true},"baz":null,"florb":1.234}`
 	let result = JSONTag.parse(json)
 	t.same(result, JSON.parse(json))
 	t.ok(JSONTag.isNull(result.baz))
@@ -75,15 +68,22 @@ tap.test('Link2', t => {
 		},
 		"bar":<link>"#source"
 	}`
-/*
-		"bar":<link>"/foo/"  -> json pointer
-		"bar":<link>"//source" -> url - zonder protocol -> altijd https:
-					".." -> illegaal, net als alle andere relatieve paden
-		//FIXME: geen 'id="X"' gebruiken, maar bijv. 'refid="X"', zodat er minder verwarring 
-		rondom de term id kan ontstaan
- */
 	let result = JSONTag.parse(jsont)
 	t.equal(result, result.bar)
+	t.end()
+})
+
+tap.test('Link3', t => {
+	let jsont = `{
+		"arr": [
+			<link>"#foo"
+		],
+		"foo": <object id="foo">{
+			"bar":"Bar"
+		}
+	}`
+	let result = JSONTag.parse(jsont)
+	t.equal(result.arr[0],result.foo)
 	t.end()
 })
 
@@ -128,6 +128,16 @@ tap.test('Types', t => {
 	t.equal(JSONTag.getType(result.datetime), 'datetime')
 	t.equal(JSONTag.getType(result.decimal), 'decimal')
 	t.equal(JSONTag.getType(result.money), 'money')
+	t.equal(JSONTag.getType(result.link), 'link')
+	t.equal(JSONTag.getType(result.url), 'url')
+	t.equal(JSONTag.getType(result.text), 'text')
+	t.equal(JSONTag.getType(result.blob), 'blob')
+	t.equal(JSONTag.getType(result.color), 'color')
+	t.equal(JSONTag.getType(result.email), 'email')
+	t.equal(JSONTag.getType(result.hash), 'hash')
+	t.equal(JSONTag.getType(result.phone), 'phone')
+	t.equal(JSONTag.getType(result.int), 'int')
+	t.equal(JSONTag.getType(result.uint), 'uint')	
 	t.end()
 })
 
