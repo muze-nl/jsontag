@@ -6,7 +6,10 @@ class ExtendableProxy {
 		return new Proxy(this,{
 			get: (target,name) => {
 				if (typeof target[name] !== 'undefined') {
-					return target[name];
+					return target[name]
+				}
+				if (name == 'then') {
+					return undefined
 				}
 				console.error('Attempting to get from Null', name, typeof name, JSON.stringify(name))
 				throw new Error('Attempting to get '+name+' from Null')
