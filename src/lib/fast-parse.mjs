@@ -12,6 +12,9 @@ export default function parse(input, reviver, meta) {
 	if (!meta.unresolved) {
 		meta.unresolved = []
 	}
+	if (!meta.baseURL) {
+		meta.baseURL = 'http://localhost/'
+	}
 
 	let at, ch, value, result;
 	let escapee = {
@@ -43,7 +46,7 @@ export default function parse(input, reviver, meta) {
 		return ch
 	}
 	
-	let number = function() {
+	let number = function(tagName) {
 		let numString = ''
 		if (ch==='-') {
 			numString = '-'
@@ -71,10 +74,273 @@ export default function parse(input, reviver, meta) {
 				next()
 			}
 		}
-		return new Number(numString).valueOf()
+		let result = new Number(numString).valueOf()
+		if (tagName) {
+			switch(tagName) {
+				case "int":
+					isInt(numString)
+					break
+				case "uint":
+					isInt(numString, [0,Infinity])
+					break
+				case "int8":
+					isInt(numString, [-128,127])
+					break
+				case "uint8":
+					isInt(numString, [0,255])
+					break
+				case "int16":
+					isInt(numString, [-32768,32767])
+					break
+				case "uint16":
+					isInt(numString, [0,65535])
+					break
+				case "int32":
+					isInt(numString, [-2147483648, 2147483647])
+					break
+				case "uint32":
+					isInt(numString, [0,4294967295])
+					break
+				case "timestamp":
+				case "int64":
+					isInt(numString, [-9223372036854775808,9223372036854775807])
+					break
+				case "uint64":
+					isInt(numString, [0,18446744073709551615])
+					break
+				case "float":
+					isFloat(numString)
+					break
+				case "float32":
+					isFloat(numString, [-3.4e+38,3.4e+38])
+					break
+				case "float64":
+					isFloat(numString, [-1.7e+308,+1.7e+308])
+					break
+				case "number":
+					//FIXME: what to check? should already be covered by JSON parsing rules?
+					break
+				default:
+					isTypeError(tagName)
+					break
+			}
+		}
+		return result
 	}
-	
-	let string = function() {
+
+	let isTypeError = function(type) {
+		error('Syntax error, expected '+type)
+	}
+
+	let regexes = {
+		color: /^(rgb|hsl)a?\((\d+%?(deg|rad|grad|turn)?[,\s]+){2,3}[\s\/]*[\d\.]+%?\)$/i,
+		email: /^[A-Za-z0-9_!#$%&'*+\/=?`{|}~^.-]+@[A-Za-z0-9.-]+$/gm,
+		uuid:  /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/,
+		decimal: /^\d*\.?\d*$/,
+		money: /^[A-Z]+\$\d*\.?\d*$/,
+		duration: /^(-?)P(?=\d|T\d)(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)([DW]))?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/,
+		phone: /^[+]?(?:\(\d+(?:\.\d+)?\)|\d+(?:\.\d+)?)(?:[ -]?(?:\(\d+(?:\.\d+)?\)|\d+(?:\.\d+)?))*(?:[ ]?(?:x|ext)\.?[ ]?\d{1,5})?$/,
+		time: /^(\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?$/,
+		date: /^[1-9][0-9][0-9]{2}-([0][1-9]|[1][0-2])-([1-2][0-9]|[0][1-9]|[3][0-1])$/gm,
+		datetime: /^(\d{4,})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?$/,
+		range: /^\[-?(\d+\.)?\d+\,-?(\d+\.)?\d+\]$/
+	}
+
+	let isFloat = function(float, range) {
+		let test = new Number(parseFloat(float))
+		let str = test.toString()
+		if (float!==str) {
+			error('Syntax Error: expected float value')
+		}
+		if (range) {
+			if (typeof range[0] === 'number') {
+				if (test<range[0]) {
+					error('Syntax Error: float value out of range')
+				}
+			}
+			if (typeof range[1] === 'number') {
+				if (test>range[1]) {
+					error('Syntax Error: float value out of range')	
+				}
+			}
+		}
+	}
+	let isInt = function(int, range) {
+		let test = new Number(parseInt(int))
+		let str = test.toString()
+		if (int!==str) {
+			error('Syntax Error: expected integer value')
+		}
+		if (range) {
+			if (typeof range[0] === 'number') {
+				if (test<range[0]) {
+					error('Syntax Error: integer value out of range')
+				}
+			}
+			if (typeof range[1] === 'number') {
+				if (test>range[1]) {
+					error('Syntax Error: integer value out of range')	
+				}
+			}
+		}
+	}
+	let isColor = function(color) {
+		let result = false
+	    if (color.charAt(0) === "#") {
+	        color = color.substring(1)
+	        result = ([3, 4, 6, 8].indexOf(color.length) > -1) && !isNaN(parseInt(color, 16))
+	        if (result.toString(16)!==color) {
+	        	isTypeError('color')
+	        }
+	    } else {
+	        result = regexes.color.test(color)
+	    }
+	    if (!result) {
+	    	isTypeError('color')
+	    }
+	    return true
+	}
+
+	let isEmail = function(email) {
+		let result = regexes.email.test(email)
+	    if (!result) {
+	    	isTypeError('email')
+	    }
+	    return true
+	}
+
+	let isUuid = function(uuid) {
+		let result = regexes.uuid.test(uuid)
+	    if (!result) {
+	    	isTypeError('uuid')
+	    }
+	    return true
+	}
+	let isDecimal = function(decimal) {
+		let result = regexes.decimal.test(decimal)
+	    if (!result) {
+	    	isTypeError('decimal')
+	    }
+	    return true
+	}
+	let isMoney = function(money) {
+		let result = regexes.money.test(money)
+	    if (!result) {
+	    	isTypeError('money')
+	    }
+	    return true
+	}
+	let isUrl = function(url) {
+		try {
+			return Boolean(new URL(url, meta.baseURL))
+		} catch(e) {
+			console.log(e)
+			isTypeError('url')
+		}
+	}
+	let isDuration = function(duration) {
+		let result = regexes.duration.test(duration)
+	    if (!result) {
+	    	isTypeError('duration')
+	    }
+	    return true
+	}
+	let isPhone = function(phone) {
+		let result = regexes.phone.test(phone)
+	    if (!result) {
+	    	isTypeError('phone')
+	    }
+	    return true
+	}
+	let isRange = function(range) {
+		let result = regexes.range.test(range)
+	    if (!result) {
+	    	isTypeError('range')
+	    }
+	    return true
+	}
+	let isTime = function(time) {
+		let result = regexes.time.test(time)
+	    if (!result) {
+	    	isTypeError('time')
+	    }
+	    return true
+	}
+	let isDate = function(date) {
+		let result = regexes.date.test(date)
+	    if (!result) {
+	    	isTypeError('date')
+	    }
+	    return true
+	}
+	let isDatetime = function(datetime) {
+		let result = regexes.datetime.test(datetime)
+	    if (!result) {
+	    	isTypeError('datetime')
+	    }
+	    return true
+	}
+
+	let checkStringType = function(tagName, value) {
+		if (!tagName) {
+			return
+		}
+		switch(tagName){
+			case "object":
+			case "array":
+			case "boolean":
+			case "int8":
+			case "uint8":
+			case "int16":
+			case "uint16":
+			case "int32":
+			case "uint32":
+			case "int64":
+			case "uint64":
+			case "int":
+			case "uint":
+			case "float32":
+			case "float64":
+			case "float":
+			case "timestamp":
+				isTypeError(tagName)
+				break
+			case "uuid":
+				return isUuid(value)
+			case "decimal":
+				return isDecimal(value)
+			case "money":
+				return isMoney(value)
+			case "link":
+			case "url":
+				return isUrl(value)
+			case "string":
+			case "text":
+			case "blob":
+			case "hash":
+				//anything goes
+				return true
+			case "color":
+				return isColor(value)
+			case "email":
+				return isEmail(value)
+			case "duration":
+				return isDuration(value)
+			case "phone":
+				return isPhone(value)
+			case "range":
+				return isRange(value)
+			case "time":
+				return isTime(value)
+			case "date":
+				return isDate(value)
+			case "datetime":
+				return isDatetime(value)
+		}
+		error('Syntax error: unknown tagName '+tagName)
+	}	
+
+	let string = function(tagName) {
 		let value = "", hex, i, uffff;
 		if (ch !== '"') {
 			error("Syntax Error")
@@ -83,6 +349,7 @@ export default function parse(input, reviver, meta) {
 		while(ch) {
 			if (ch==='"') {
 				next()
+				checkStringType(tagName, value)
 				return value
 			}
 			if (ch==='\\') {
@@ -177,16 +444,22 @@ export default function parse(input, reviver, meta) {
 		return val
 	}
 
-	let boolOrNull = function() {
+	let boolOrNull = function(tagName) {
 		let w = word()
 		if (!w || typeof w !== 'string') {
 			error('Syntax error: expected boolean or null, got "'+w+'"')
 		}
 		switch(w.toLowerCase()) {
 			case 'true':
+				if (tagName && tagName!=='boolean') {
+					isTypeError(tagName)
+				}
 				return true
 			break
 			case 'false':
+				if (tagName && tagName!=='boolean') {
+					isTypeError(tagName)
+				}
 				return false 
 			break
 			case 'null':
@@ -269,33 +542,39 @@ export default function parse(input, reviver, meta) {
 	}
 
 	value = function() {
-		let tagOb, result;
-		while (typeof result === 'undefined' && ch) {
+		let tagOb, result, tagName;
+		whitespace()
+		if (ch==='<') {
+			tagOb = tag()
+			tagName = tagOb.tagName
 			whitespace()
-			switch(ch) {
-				case '{':
-					result = object()
-				break
-				case '[':
-					result = array()
-				break
-				case '"':
-					result = string()
-				break
-				case '<':
-					tagOb = tag()
-				break
-				case '-':
-					result = number()
-				break
-				default:
-					if (ch>='0' && ch<='9') {
-						result = number()
-					} else {
-						result = boolOrNull()
-					}
-				break
-			}
+		}
+		switch(ch) {
+			case '{':
+				if (tagName && tagName!=='object') {
+					isTypeError(tagName)
+				}
+				result = object()
+			break
+			case '[':
+				if (tagName && tagName!=='array') {
+					isTypeError(tagName)
+				}
+				result = array()
+			break
+			case '"':
+				result = string(tagName)
+			break
+			case '-':
+				result = number(tagName)
+			break
+			default:
+				if (ch>='0' && ch<='9') {
+					result = number(tagName)
+				} else {
+					result = boolOrNull(tagName)
+				}
+			break
 		}
 		if (tagOb) {
 			if (result === null) {

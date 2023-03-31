@@ -51,7 +51,7 @@ JSONT {
     
 
   stringyTypeNames =
-    "link" | "text" | "blob" | "color" | "email" | "hash" | "interval" | "phone" | "range" | "time" | "url" 
+    "link" | "text" | "blob" | "color" | "email" | "hash" | "duration" | "phone" | "range" | "time" | "url" 
 
   intTypeName = 
 		"int8" | "uint8" | "int16" | "uint16" | "int32" |
@@ -290,6 +290,7 @@ const actions = {
 	},
 	Array_nonEmpty: function (_1, x, _3, xs, _5) {
 		var out = [x.parse()];
+		// FIXME: an array with one entry somehow as xs.children.length===0
 		for (var i = 0; i < xs.children.length; i++) {
 			let c = xs.children[i].parse()
 			out.push(c);

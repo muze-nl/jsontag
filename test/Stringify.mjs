@@ -48,7 +48,7 @@ tap.test('Circular', t => {
  		'color':'hsl(255,90,90)',
  		'email':'someone@example.com',
  		'hash':'2bb80d537b1da3e38bd30361aa855686bde0eacd7162fef6a25fe97bf527a25b',
- 		'interval':'P15D',
+ 		'duration':'P15D',
  		'phone':'0031612345678',
  		'url':'https://www.example.org/',
  		'uuid':'0786f031-ffba-4dfc-92de-37dc441d5224',

@@ -110,7 +110,7 @@ tap.test('Types', t => {
 		"decimal": <decimal>"1.0000001",
 		"money": <money>"EUR$123.99",
 		"link": <link>"https://www.muze.nl/",
-		"url": <url>"https://www,example.org/",
+		"url": <url>"https://www.example.org/",
 		"text": <text>"This is a longer text",
 		"blob": <blob>"Should probably be base64 encoded, but hey",
 		"color": <color>"hsl(360, 100%, 50%)",
@@ -157,4 +157,36 @@ tap.test('Prototype Pollution', t => {
 	t.equal(result, null)
 	t.end()
 
+})
+
+tap.test('Incorrect Types', t => {
+	let syntaxErrors = [
+		`<color>"foo"`,
+		`<email>"foo"`,
+		`<boolean>"foo"`,
+		`<boolean>maybe`,
+		`<number>"foo"`,
+		`<string>1`,
+		`<object>"foo"`,
+		`<array>{}`,
+		`<text>false`,
+		`<blob>[]`,
+		`<int>"foo"`,
+		`<float>[]`,
+		`<color>"#foobar"`,
+		`<date>"foo"`,
+		`<decimal>"foo"`,
+		`<int8>1024`
+	]
+	syntaxErrors.forEach(line => {
+		let result = null
+		try {
+			result = JSONTag.parse(line)
+			console.log("syntax error passed: "+line)
+		} catch(e) {
+			// empty
+		}
+		t.equal(result,null)
+	})
+	t.end()
 })
