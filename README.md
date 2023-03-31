@@ -59,9 +59,34 @@ npx parcel build
 
 ### parse
 
-> `JSONTag.parse(stringValue, reviver)`
+> `JSONTag.parse(stringValue, reviver, meta)`
 
 `JSONTag.parse` works identical to [`JSON.parse`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse) and is backwards compatible with `JSON` strings.
+
+It adds a `meta` parameter, which can be omitted. The format of `meta` is:
+
+```
+{
+	index: {},
+	unresolved: [],
+	baseURL: "https://localhost/"
+}
+```
+
+The meta index is updated to add `{ id: <value reference> }` pairs, for each value that has a tag with an `id` attribute. 
+For each `<link>` tag found, which has a URL value not found as an id in the meta index, an entry in the unresolved array is added, like this:
+
+```
+{
+	src: <parent object>,
+	key: <property name or index>,
+	val: <link URI>
+}
+```
+
+On each parse() call, if you pass the meta object, all unresolved entries will be checked to see if there is now a corresponding value. If so, the `<link>` objects will be automatically replaced with a reference to that value and the entry removed from the unresolved array.
+
+The baseURL value is used to parse and validate link and URL values. It will also be used to match id attribute values with link values in the future. This will allow you to automatically link together jsontag documents with different baseURLs.
 
 ### stringify
 
@@ -255,25 +280,15 @@ The extra meta parameter is an object with an `ids` property, which is an object
 
 ## TODO
 
-- implement parser rules for:
-	- int
-	- float
-	- color
-	- email
-	- hash
-	- interval
-	- phone
-	- range
-	- url
-
 - figure out if the URL parser must become strict, to avoid server-side request forgery using differences in the parsing of invalid URLs
 
-- tie down decimal format, money format, allow "," in money format, only every 3 digits
+- resolve id attributes and link values using the meta.baseURL value
 
-- add stub type class for most JSONTag types
+- if jsontag.parse links together objects from different baseURLs, then stringify will generate a single new document from multiple seperate documents. Should we keep track of which object is part of which original document, so that we can recreate a specific document with a specific baseURL? Similar to how Quads work in Linked Data?
 
-- write more tests
+- add a streaming parser
 
+- change the id attribute to always be a valid URI, so the <link> value and id attribute value can become identical
 
 ## Motivation
 
