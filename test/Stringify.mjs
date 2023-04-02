@@ -42,7 +42,7 @@ tap.test('Circular', t => {
  		'string':'string',
  		'decimal':'10.50',
  		'money':'EUR$10.50',
- 		'link':'#link',
+ 		'link':'link',
  		'text':'text',
  		'blob':'dGV4dA==',
  		'color':'hsl(255,90,90)',
@@ -94,7 +94,7 @@ tap.test('Circular', t => {
         <object class="bar" id="2">{
             "name":"Bar",
             "children":[
-                <link>"#1"
+                <link>"1"
             ]
         }
     ]

@@ -7,10 +7,10 @@ export default function parse(input, reviver, meta) {
 		meta = {}
 	}
 	if (!meta.index) {
-		meta.index = new WeakMap()
+		meta.index = new Map()
 	}
 	if (!meta.unresolved) {
-		meta.unresolved = []
+		meta.unresolved = new Map()
 	}
 	if (!meta.baseURL) {
 		meta.baseURL = 'http://localhost/'
@@ -311,9 +311,9 @@ export default function parse(input, reviver, meta) {
 				return isDecimal(value)
 			case "money":
 				return isMoney(value)
-			case "link":
 			case "url":
 				return isUrl(value)
+			case "link":
 			case "string":
 			case "text":
 			case "blob":
@@ -471,6 +471,18 @@ export default function parse(input, reviver, meta) {
 		}
 	}
 
+	let checkUnresolved = function(item, object, key) {
+		if (JSONTag.getType(item)==='link') {
+			if (typeof meta.unresolved[item+''] === 'undefined') {
+				meta.unresolved[item+'']=[]
+			}
+			let count = meta.unresolved[item+''].push({
+				src: new WeakRef(object),
+				key: key
+			})
+		}
+	}
+
 	let array = function() {
 		let item, array = []
 		if (ch !== '[') {
@@ -484,13 +496,7 @@ export default function parse(input, reviver, meta) {
 		}
 		while(ch) {
 			item = value()
-			if (JSONTag.getType(item)==='link') {
-				meta.unresolved.push({
-					src: new WeakRef(array),
-					key: array.length,
-					val: item
-				})
-			}
+			checkUnresolved(item, array, array.length)
 			array.push(item)
 			whitespace()
 			if (ch===']') {
@@ -523,13 +529,7 @@ export default function parse(input, reviver, meta) {
 			next(':')
 			val = value()
 			object[key] = val
-			if (JSONTag.getType(val)==='link') {
-				meta.unresolved.push({
-					src: new WeakRef(object),
-					key: key,
-					val: val
-				})
-			}
+			checkUnresolved(val, object, key)
 			whitespace()
 			if (ch==='}') {
 				next('}')
@@ -602,7 +602,7 @@ export default function parse(input, reviver, meta) {
 			if (tagOb.attributes) {
 				JSONTag.setAttributes(result, tagOb.attributes)
 				if (tagOb.attributes?.id) {
-					meta.index[tagOb.attributes.id] = result
+					meta.index[tagOb.attributes.id] = new WeakRef(result)
 				}
 			}
 		}
@@ -617,25 +617,12 @@ export default function parse(input, reviver, meta) {
 		error("Syntax error")
 	}
 
-	meta.unresolved.forEach((u,i) => {
-		if (JSONTag.getType(u.val)==='link' && u.val[0]==='#') {
-			let id = u.val.substring(1)
-			if (typeof meta.index[id] !== 'undefined') {
-				let src = u.src.deref()
-				if (src) {
-					src[u.key] = meta.index[id]
-				}
-				delete meta.unresolved[i]
-			}
-		}
-	})
-
 	if (typeof reviver === 'function') {
 		function walk(holder, key) {
-	      var k;
+		  var k;
 	      var v;
 	      var value = holder[key];
-	      if (value 
+	      if (value !== null 
 	      		&& typeof value === "object" 
 	      		&& !(value instanceof String 
 	      		|| value instanceof Number
@@ -644,9 +631,14 @@ export default function parse(input, reviver, meta) {
 	          for (k in value) {
 	              if (Object.prototype.hasOwnProperty.call(value, k)) {
 	                  v = walk(value, k);
-	                  if (v !== undefined) {
+	                  if (v !== undefined 
+	                  	  && ( typeof value[k] === 'undefined' || value[k]!==v) )
+	                  {
 	                      value[k] = v;
-	                  } else {
+	                      if (JSONTag.getType(v)==='link') {
+	                      	  checkUnresolved(v, value, k)
+	                      }
+	                  } else if (v === undefined) {
 	                      delete value[k];
 	                  }
 	              }
@@ -654,7 +646,42 @@ export default function parse(input, reviver, meta) {
 	      }
 	      return reviver.call(holder, key, value, meta);
 	    }
-		return walk({"":result}, "")
+		walk({"":result}, "")
+	}
+
+	let replaceLink = function(u,value) {
+		if (typeof value !== 'undefined') {
+			let src = u.src.deref()
+			if (JSONTag.getType(src[u.key])==='link') {
+				if (src!==undefined) {
+					src[u.key] = value
+					return true
+				}
+			}
+		}
+	}
+
+	if (meta.index.size>meta.unresolved.size) {
+		Object.entries(meta.unresolved).forEach((id,links) => {
+			let value = meta.index[id].deref()
+			if (value!==undefined) {
+				links.forEach((u,i) => {
+					if (replaceLink(u,meta.value)) {
+						delete links[i]
+					}
+				})
+			}
+		})
+	} else {
+		Object.keys(meta.index).forEach(id => {
+			let value = meta.index[id].deref()
+			if (value!==undefined && typeof meta.unresolved[id] !== 'undefined') {
+				meta.unresolved[id].forEach((u,i) => {
+					replaceLink(u,value)
+				})
+				delete meta.unresolved[id]
+			}
+		})
 	}
 	return result
 }

@@ -75,7 +75,7 @@ export const stringify = (value, replacer=null, space="") => {
 			if (!id) {
 				id = createId(value)
 			}
-			return '<link>"#'+id+'"'
+			return '<link>"'+id+'"'
 		}
 		if (typeof value === 'undefined' || value === null) {
 			return 'null'

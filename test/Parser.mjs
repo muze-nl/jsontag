@@ -1,6 +1,7 @@
 import JSONTag from '../src/JSONTag.mjs'
 import Null from '../src/lib/Null.mjs'
 import tap from 'tap'
+import fs from 'fs'
 
 tap.test('ParseJson', t => {
 	let json = `
@@ -54,10 +55,12 @@ tap.test('Link', t => {
 		"foo":<object id="JSONTag1">{
 			"bar":"Baz"
 		},
-		"bar":<link>"#JSONTag1"
+		"bar":<link>"JSONTag1"
 	}`
-	let result = JSONTag.parse(jsont)
+	let meta = {foo:'bar'}
+	let result = JSONTag.parse(jsont, null, meta)
 	t.equal(result.foo, result.bar)
+	t.equal(meta.foo,'bar')
 	t.end()
 })
 
@@ -66,7 +69,7 @@ tap.test('Link2', t => {
 		"foo":<object id="JSONTag1">{
 			"bar":"Baz"
 		},
-		"bar":<link>"#source"
+		"bar":<link>"source"
 	}`
 	let result = JSONTag.parse(jsont)
 	t.equal(result, result.bar)
@@ -76,7 +79,7 @@ tap.test('Link2', t => {
 tap.test('Link3', t => {
 	let jsont = `{
 		"arr": [
-			<link>"#foo"
+			<link>"foo"
 		],
 		"foo": <object id="foo">{
 			"bar":"Bar"
@@ -89,6 +92,7 @@ tap.test('Link3', t => {
 
 tap.test('Reviver', t =>{
 	let jsont = `{
+		"foo": "bar",
 		"date": <date>"1972-09-20"
 	}`
 	let result = JSONTag.parse(jsont, (key, value, meta) => {
@@ -98,6 +102,22 @@ tap.test('Reviver', t =>{
 		return value;
 	})
 	t.ok(result.date instanceof Date)
+	t.equal(result.foo, "bar")
+	t.end()
+})
+
+tap.test('ReviverLink', t =>{
+	let jsont = `{
+		"foo": <object id="foobar">{"bar":"baz"},
+		"bar": <link>"foo"
+	}`
+	let result = JSONTag.parse(jsont, (key, value, meta) => {
+		if (JSONTag.getType(value)==='link') {
+			return new JSONTag.Link(value+'bar')
+		}
+		return value;
+	})
+	t.equal(result.bar,result.foo)
 	t.end()
 })
 
