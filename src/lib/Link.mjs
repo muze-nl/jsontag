@@ -1,4 +1,4 @@
-import { getAttributesString } from "./functions.mjs"
+import { getAttributesString, setType } from "./functions.mjs"
 
 export default class Link {
 	#url;
@@ -9,6 +9,7 @@ export default class Link {
 			throw new Error('not a url:',url)
 		}
 		this.#url = ''+url
+		setType(this, 'link')
 	}
 
 	static from(url)
