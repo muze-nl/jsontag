@@ -1,6 +1,6 @@
 import Null from './lib/Null.mjs'
 import * as attr from './lib/functions.mjs'
-import parse from './lib/parse.mjs'
+import parse from './lib/fast-parse.mjs'
 
 window.JSONTag = {
 	Null: Null,
