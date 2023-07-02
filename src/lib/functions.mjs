@@ -1,10 +1,4 @@
-if (typeof crypto === 'undefined') {
-	try {
-		var crypto = await import('node:crypto')
-	} catch(err) {
-		// ignore errors, we might not be in node environment
-	}
-}
+import crypto from 'node:crypto' // remove this line before running parcel build
 
 // keep reference to original JSON.stringify, in case someone monkeypatches it
 const jsonStringify = JSON.stringify
