@@ -3,6 +3,7 @@ import Null from '../src/lib/Null.mjs'
 import tap from 'tap'
 import fs from 'fs'
 
+
 tap.test('ParseJson', t => {
 	let json = `
 {"name":"John","foo":{"bar":true},"baz":null,"florb":1.234}`
@@ -142,6 +143,7 @@ tap.test('Types', t => {
 	}`
 
 	let result = JSONTag.parse(jsont)
+	result = JSONTag.parse(jsont) // make sure no regexes have the /g flag set
 	t.equal(JSONTag.getType(result.uuid), 'uuid')
 	t.equal(JSONTag.getType(result.time), 'time')
 	t.equal(JSONTag.getType(result.date), 'date')
@@ -209,4 +211,22 @@ tap.test('Incorrect Types', t => {
 		t.equal(result,null)
 	})
 	t.end()
+})
+
+tap.test('UnresolvedIndexes', t => {
+	let jsont = `{
+		"bar":<object id="bar">{"baz":"baar"},
+		"foo":<link>"bar",
+		"foobar":<link>"bar"
+	}`
+	let result = JSONTag.parse(jsont)
+	t.equal(result.bar,result.foo,result.foobar)
+	jsont = `{
+		"bar":<object id="bar">{"baz":"baar"},
+		"baz":<object id="baz">{"baz":"baar"},
+		"foo":<link>"bar"
+	}`
+	result = JSONTag.parse(jsont)
+	t.equal(result.bar,result.foo)
+	t.end()	
 })
