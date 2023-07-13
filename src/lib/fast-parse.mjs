@@ -7,7 +7,10 @@ export default function parse(input, reviver, meta) {
 		meta = {}
 	}
 	if (!meta.index) {
-		meta.index = new Map()
+		meta.index = {}
+	}
+	if (!meta.index.id) {
+		meta.index.id = new Map()
 	}
 	if (!meta.unresolved) {
 		meta.unresolved = new Map()
@@ -473,10 +476,13 @@ export default function parse(input, reviver, meta) {
 
 	let checkUnresolved = function(item, object, key) {
 		if (JSONTag.getType(item)==='link') {
-			if (typeof meta.unresolved[item+''] === 'undefined') {
-				meta.unresolved[item+'']=[]
+			let link = ''+item
+			let links = meta.unresolved.get(link)
+			if (typeof links === 'undefined') {
+				meta.unresolved.set(link,[])
+				links = meta.unresolved.get(link)
 			}
-			let count = meta.unresolved[item+''].push({
+			let count = links.push({
 				src: new WeakRef(object),
 				key: key
 			})
@@ -602,7 +608,7 @@ export default function parse(input, reviver, meta) {
 			if (tagOb.attributes) {
 				JSONTag.setAttributes(result, tagOb.attributes)
 				if (tagOb.attributes?.id) {
-					meta.index[tagOb.attributes.id] = new WeakRef(result)
+					meta.index.id.set(tagOb.attributes.id, new WeakRef(result))
 				}
 			}
 		}
@@ -652,34 +658,33 @@ export default function parse(input, reviver, meta) {
 	let replaceLink = function(u,value) {
 		if (typeof value !== 'undefined') {
 			let src = u.src.deref()
-			if (JSONTag.getType(src[u.key])==='link') {
-				if (src!==undefined) {
-					src[u.key] = value
-					return true
-				}
+			if (typeof src!== 'undefined' && JSONTag.getType(src[u.key])==='link') {
+				src[u.key] = value
+				return true
 			}
 		}
 	}
 
-	if (meta.index.size>meta.unresolved.size) {
-		Object.entries(meta.unresolved).forEach((id,links) => {
-			let value = meta.index[id].deref()
+	if (meta.index.id.size>meta.unresolved.size) {
+		meta.unresolved.forEach((links,id) => {
+			let value = meta.index.id.get(id)?.deref()
 			if (value!==undefined) {
 				links.forEach((u,i) => {
-					if (replaceLink(u,meta.value)) {
+					if (replaceLink(u,value)) {
 						delete links[i]
 					}
 				})
 			}
 		})
 	} else {
-		Object.keys(meta.index).forEach(id => {
-			let value = meta.index[id].deref()
-			if (value!==undefined && typeof meta.unresolved[id] !== 'undefined') {
-				meta.unresolved[id].forEach((u,i) => {
+		meta.index.id.forEach((ref,id) => {
+			let value = ref.deref()
+			let links = meta.unresolved.get(id)
+			if (value!==undefined && typeof links !== 'undefined') {
+				links.forEach((u,i) => {
 					replaceLink(u,value)
 				})
-				delete meta.unresolved[id]
+				meta.unresolved.delete(id)
 			}
 		})
 	}

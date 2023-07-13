@@ -3,7 +3,6 @@ import Null from '../src/lib/Null.mjs'
 import tap from 'tap'
 import fs from 'fs'
 
-
 tap.test('ParseJson', t => {
 	let json = `
 {"name":"John","foo":{"bar":true},"baz":null,"florb":1.234}`
@@ -73,7 +72,7 @@ tap.test('Link2', t => {
 		"bar":<link>"source"
 	}`
 	let result = JSONTag.parse(jsont)
-	t.equal(result, result.bar)
+	t.equal(result.bar, result)
 	t.end()
 })
 
@@ -227,6 +226,19 @@ tap.test('UnresolvedIndexes', t => {
 		"foo":<link>"bar"
 	}`
 	result = JSONTag.parse(jsont)
-	t.equal(result.bar,result.foo)
+	t.equal(result.foo,result.bar)
 	t.end()	
+})
+
+tap.test('Index', t => {
+	let jsont = `{
+		"bar":<object id="bar">{"baz":"baar"},
+		"baz":<object id="baz">{"baz":"baar"},
+		"foo":<link>"bar"
+	}`
+	let meta = {}
+	let result = JSONTag.parse(jsont, null, meta)
+	t.ok(meta.index.id.has('bar'))
+	t.equal(meta.index.id.get('bar').deref(), result.bar)
+	t.end()
 })
