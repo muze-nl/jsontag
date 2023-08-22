@@ -314,16 +314,32 @@ export const getTypeString = (obj) => {
 	}
 }
 
+function shallowClone(o) {
+	if (o instanceof Number) {
+		return new Number(o)
+	}
+	if (o instanceof Boolean) {
+		return new Boolean(o)
+	}
+	if (o instanceof String) {
+		return new String(o)
+	}
+	if (Array.isArray(o)) {
+		return [ ...o ]
+	}
+	return { ...o }
+}
+
 export const clone = (obj) => {
+	let typeString = getTypeString(obj)
 	let type = getType(obj)
 	let attributes = getAttributes(obj)
-	let clone = Object.assign({}, obj)
-	if (type && type!=='object') {
+	let clone = shallowClone(obj)
+	if (typeString) {
 		setType(clone, type)
-	}
-	if (attributes) {
-		setAttributes(clone, attributes)
+		if (attributes) {
+			setAttributes(clone, attributes)
+		}
 	}
 	return clone
 }
-

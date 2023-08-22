@@ -15,3 +15,11 @@ tap.test('Entries', t => {
 	t.equal(JSONTag.stringify(d), '["foo","bar"]')
 	t.end()
 })
+
+tap.test('clone', t => {
+	let d = JSONTag.parse('<array class="Persons">[{"name":"John"}]')
+	let c = JSONTag.clone(d)
+	let jsontag = JSONTag.stringify(c)
+	t.equal(jsontag, JSONTag.stringify(d))
+	t.end()
+})

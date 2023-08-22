@@ -29,3 +29,10 @@ tap.test('Class2', t => {
 	t.end()
 })
 
+tap.test('clone', t => {
+	let d = JSONTag.parse('<object class="Person">{"name":"John"}')
+	let c = JSONTag.clone(d)
+	let jsontag = JSONTag.stringify(c)
+	t.equal(jsontag, JSONTag.stringify(d))
+	t.end()
+})
