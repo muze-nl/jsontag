@@ -70,7 +70,6 @@ tap.test('Circular', t => {
  		'float64':0.3,
  		'timestamp':1655729149,
  		'number': 10e1,
- 		'boolean':true,
  		'array':[1,2,3],
  		'object':{name:'John'}
  	}
@@ -103,4 +102,12 @@ tap.test('Circular', t => {
 	let s = JSONTag.stringify(o,null,4)
 	t.equal(jsont,s)
 	t.end()
+ })
+
+ tap.test('bool', t => {
+ 	let jsont=`{"bool":false}`
+ 	let o = JSONTag.parse(jsont)
+ 	let s = JSONTag.stringify(o)
+ 	t.equal(s, jsont)
+ 	t.end()
  })

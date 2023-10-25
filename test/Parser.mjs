@@ -158,7 +158,7 @@ tap.test('Types', t => {
 	t.equal(JSONTag.getType(result.hash), 'hash')
 	t.equal(JSONTag.getType(result.phone), 'phone')
 	t.equal(JSONTag.getType(result.int), 'int')
-	t.equal(JSONTag.getType(result.uint), 'uint')	
+	t.equal(JSONTag.getType(result.uint), 'uint')
 	t.end()
 })
 
@@ -184,8 +184,6 @@ tap.test('Incorrect Types', t => {
 	let syntaxErrors = [
 		`<color>"foo"`,
 		`<email>"foo"`,
-		`<boolean>"foo"`,
-		`<boolean>maybe`,
 		`<number>"foo"`,
 		`<string>1`,
 		`<object>"foo"`,
@@ -240,5 +238,13 @@ tap.test('Index', t => {
 	let result = JSONTag.parse(jsont, null, meta)
 	t.ok(meta.index.id.has('bar'))
 	t.equal(meta.index.id.get('bar').deref(), result.bar)
+	t.end()
+})
+
+tap.test("bool", t => {
+	let jsont = `{"bool":false,"bool2":true}`
+	let o = JSONTag.parse(jsont)
+	t.equal(o.bool,false)
+	t.equal(o.bool2, true)
 	t.end()
 })

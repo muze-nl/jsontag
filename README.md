@@ -105,7 +105,7 @@ This function will return the type of the value. It will return the normal JSON 
 > `JSONTag.setType(value, type)`
 
 This will annotate the value as being of type `type`. Valid types are: 
-`object`,`array`,`string`,`number`,`boolean`,
+`object`,`array`,`string`,`number`,
 `decimal`,`money`,`uuid`,`url`,`link`,`date`,`time`,`datetime`, `interval`, `timestamp`,
 `text`, `blob`, `color`, `email`, `hash`, `phone`,
 `int`, `int8`, `int16`, `int32`, `int64`,
@@ -194,7 +194,6 @@ The list below is preliminary. The aim is to have a good coverage of most used o
 
 ### JSON derived
 
-- boolean
 - number
 - string
 - object
@@ -223,6 +222,10 @@ The list below is preliminary. The aim is to have a good coverage of most used o
 - timestamp
 - url
 - uuid
+
+## Boolean values
+
+JSONTag supports only direct boolean false and true. You cannot set a tag or add attributes to them. This is because it is impossible in javascript to create an object that evaluates to false. Even `new Boolean(false)` evaluates to `true`. There is simply no way to add metadata to a specific `false` value.
 
 ## Circular data, or references
 

@@ -323,7 +323,6 @@ export default function parse(input, reviver, meta)
         switch(tagName){
             case "object":
             case "array":
-            case "boolean":
             case "int8":
             case "uint8":
             case "int16":
@@ -634,9 +633,6 @@ export default function parse(input, reviver, meta)
                         break
                     case 'number':
                         result = new Number(result)
-                        break
-                    case 'boolean':
-                        result = new Boolean(result)
                         break
                     default:
                         error('Syntax Error: unexpected type '+(typeof result))
