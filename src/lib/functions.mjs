@@ -163,7 +163,10 @@ export const isNull = (v) => {
 	return result
 }
 
-const typeInfo = new WeakMap()
+if (!globalThis.JSONTagTypeInfo) {
+	globalThis.JSONTagTypeInfo = new WeakMap()
+}
+const typeInfo = globalThis.JSONTagTypeInfo
 
 export const getType = (obj) => {
 	if (typeInfo.has(obj)) {
