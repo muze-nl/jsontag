@@ -1,4 +1,3 @@
-import crypto from 'node:crypto' // remove this line before running parcel build
 
 // keep reference to original JSON.stringify, in case someone monkeypatches it
 const jsonStringify = JSON.stringify
