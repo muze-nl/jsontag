@@ -1,6 +1,6 @@
 {
   "name": "@muze-nl/jsontag",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "tagged json library",
   "type": "module",
   "main": "src/JSONTag.mjs",
@@ -40,9 +40,6 @@
     "stream-browserify": "^3.0.0",
     "tap": "^16.0.1"
   },
-  "parcelIgnore": [
-    "node:crypto"
-  ],
   "files": [
     "README.md",
     "LICENSE",
