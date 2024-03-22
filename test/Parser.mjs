@@ -248,3 +248,10 @@ tap.test("bool", t => {
 	t.equal(o.bool2, true)
 	t.end()
 })
+
+tap.test('unicode', t => {
+	let jsont = `{"foo":"𠮷a"}`
+	let o = JSONTag.parse(jsont)
+	t.equal(o.foo, '𠮷a')
+	t.end()
+})
