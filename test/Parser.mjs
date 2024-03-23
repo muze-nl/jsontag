@@ -19,6 +19,10 @@ tap.test('ParseNull', t => {
 	t.ok(JSONTag.isNull(result))
 	t.equal(JSONTag.getType(result), 'object')
 	t.ok(result instanceof Null)
+	json = `<uint8>null`
+	result = JSONTag.parse(json)
+	t.ok(JSONTag.isNull(result))
+	t.equal(JSONTag.getType(result), 'uint8')
 	t.end()
 })
 
@@ -126,7 +130,8 @@ tap.test('Types', t => {
 		"uuid": <uuid>"9408e2c7-8f6d-4c7a-8733-6fd50b791c86",
 		"time": <time>"12:30:45",
 		"date": <date>"1972-09-20",
-		"datetime": <datetime>"1972-09-20T12:30:45",
+		"datetime": <datetime>"1972-09-20 12:30:45",
+		"datetime2": <datetime>"1972-09-20T12:30:45.10Z",
 		"decimal": <decimal>"1.0000001",
 		"money": <money>"EUR$123.99",
 		"link": <link>"https://www.muze.nl/",
