@@ -2,7 +2,6 @@ import Link from './lib/Link.mjs'
 import Null from './lib/Null.mjs'
 
 import * as attr from './lib/functions.mjs'
-import parseStream from './lib/streaming-parse.mjs'
 import parse from './lib/fast-parse.mjs'
 
 export default class JSONTag 
@@ -11,7 +10,6 @@ export default class JSONTag
 	static {
 		JSONTag.stringify   = attr.stringify
 		JSONTag.parse       = parse
-		JSONTag.parseStream = parseStream
 
 		JSONTag.getType       = attr.getType
 		JSONTag.setType       = attr.setType

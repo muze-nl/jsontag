@@ -2,6 +2,7 @@ import JSONTag from '../src/JSONTag.mjs'
 import Null from '../src/lib/Null.mjs'
 import tap from 'tap'
 
+/*
 tap.test('ParseJson', async t => {
 	let json = `
 {"name":"John","foo":{"bar":true},"baz":null,"florb":1.234}`
@@ -161,3 +162,4 @@ tap.test('Prototype Pollution', async t => {
 	t.end()
 
 })
+*/
