@@ -8,7 +8,7 @@ class ExtendableProxy {
 				if (typeof target[name] !== 'undefined') {
 					return target[name]
 				}
-				if (name == 'then') {
+				if (name == 'then' || typeof name == 'symbol') {
 					return undefined
 				}
 				console.error('Attempting to get from Null', name, typeof name, JSON.stringify(name))
