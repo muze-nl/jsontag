@@ -13,6 +13,20 @@ tap.test('Stringify', t => {
 	t.end()
 })
 
+tap.test('stringify keys', t => {
+	const ob = {
+		"\\": 'slash',
+		"\n": 'enter',
+		"\"": 'quote',
+		"\t": 'tab',
+		"€": 'unicode'
+	}
+	const result = JSONTag.stringify(ob)
+	const expect = '{"\\\\":"slash","\\n":"enter","\\"":"quote","\\t":"tab","€":"unicode"}'
+	t.same(result, expect)
+	t.end()
+})
+
 tap.test('Stringify2', t => {
 	let o = JSONTag.parse('<object class="Person">{"name":"John","dob":<date>"1972-09-20"}')
 	let result = JSONTag.stringify(o, null, 4)
