@@ -293,6 +293,8 @@ The extra meta parameter is an object with an `ids` property, which is an object
 
 - change the id attribute to always be a valid URI, so the <link> value and id attribute value can become identical
 
+- only allow id attribute on <object> since otherwise jsontag can't be converted to linked data triples without loss of information
+
 ## Motivation
 
 You might be wondering why someone would create yet another data interchange format. What is wrong with all the stuff that already exists?
