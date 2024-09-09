@@ -51,7 +51,8 @@ tap.test('Circular', t => {
 	t.same(o, newO)
 	t.end()
 })
- tap.test('Types', t => {
+
+tap.test('Types', t => {
  	let types = {
  		'string':'string',
  		'decimal':'10.50',
@@ -94,9 +95,18 @@ tap.test('Circular', t => {
  		)
  	})
  	t.end()
- })
+})
 
- tap.test('Links', t => {
+tap.test('number object', t => {
+	let data = {
+		number: new Number(9)
+	}
+	let jsont = JSONTag.stringify(data)
+	t.same(jsont, `{"number":9}`)
+	t.end()
+})
+
+tap.test('Links', t => {
  	let jsont=`{
     "foo":[
         <object class="foo" id="1">{

@@ -177,6 +177,12 @@ export const getType = (obj) => {
 	if (Array.isArray(obj)) {
 		return 'array'
 	}
+	if (obj instanceof Number) {
+		return 'number'
+	}
+	if (obj instanceof Boolean) {
+		return 'boolean'
+	}
 	return typeof obj
 }
 
