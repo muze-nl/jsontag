@@ -142,16 +142,18 @@ export const stringify = (value, replacer=null, space="") => {
 }
 
 function createId(value) {
-	if (typeof crypto === 'undefined') {
-		console.error('JSONTag: cannot generate uuid, crypto support is disabled.')
-		throw new Error('Cannot create links to resolve references, crypto support is disabled')
-	}
 	if (typeof crypto.randomUUID === 'function') {
 		var id = crypto.randomUUID()
 	} else {
-		var id = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-			(c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-		);
+		// Fallback for when crypto.randomUUID is not available
+		let replacer = c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4)
+
+		if (typeof crypto === 'undefined') {
+			// Fallback even further for when crypto API is not available
+			replacer = c => (c ^ Math.random() * 256 & 15 >> c / 4)
+		}
+
+		var id = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => replacer(c).toString(16));
 	}
 	setAttribute(value, 'id', id)
 	return id
