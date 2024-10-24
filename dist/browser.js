@@ -1,2 +1,1115 @@
-(()=>{let e=JSON.stringify;globalThis.JSONTagTypeInfo||(globalThis.JSONTagTypeInfo=new WeakMap);let t=globalThis.JSONTagTypeInfo,r=e=>{if(t.has(e)){let r=t.get(e);if(r.type)return r.type}return Array.isArray(e)?"array":typeof e},n=["object","array","string","number","boolean","decimal","money","uuid","url","link","date","time","datetime","duration","timestamp","text","blob","color","email","hash","phone","int","int8","int16","int32","int64","uint","uint8","uint16","uint32","uint64","float","float32","float64"],a=(e,r)=>{if("object"!=typeof e)throw TypeError("JSONTag can only add attributes to objects, convert literals to objects first");let a={};if(t.has(e)&&(a=t.get(e)),!n.includes(r))throw TypeError("unknown type "+r);a.type=r,void 0===a.attributes&&(a.attributes={}),t.set(e,a)},o=(e,r,n)=>{if("object"!=typeof e)throw TypeError("JSONTag can only add attributes to objects, convert literals to objects first");if(Array.isArray(n)&&(n=n.join(" ")),"string"!=typeof n)throw TypeError("attribute values must be a string or an array of strings");if(-1!==n.indexOf('"'))throw TypeError('attribute values must not contain " character');-1!==n.indexOf(" ")&&(n=n.split(" "));let a=t.get(e)||{attributes:{}};a.attributes[r]=n,t.set(e,a)},i=(e,t)=>{if("object"!=typeof e)throw TypeError("JSONTag can only add attributes to objects, convert literals to objects first");if("object"!=typeof t)throw TypeError("attributes param must be an object");Object.keys(t).forEach(r=>{o(e,r,t[r])})},s=(e,r)=>(t.get(e)||{attributes:{}}).attributes[r],u=e=>Object.assign({},(t.get(e)||{attributes:{}}).attributes),c=e=>Object.entries(u(e)).map(([e,t])=>(Array.isArray(t)&&(t=t.join(" ")),e+'="'+t+'"')).join(" "),l=e=>{let t=r(e),n=Object.entries(u(e)).map(([e,t])=>(Array.isArray(t)&&(t=t.join(" ")),e+'="'+t+'"')).join(" ");return(n||-1===["object","array","string","number","boolean"].indexOf(t)||(t=""),t||n)?"<"+[t,n].filter(Boolean).join(" ")+">":""};class f{constructor(){return new Proxy(this,{get:(e,t)=>{if(void 0!==e[t])return e[t];if("then"!=t&&"symbol"!=typeof t)throw console.error("Attempting to get from Null",t,typeof t,JSON.stringify(t)),Error("Attempting to get "+t+" from Null")},set:(e,t,r)=>{throw console.error("Attempting to set "+t+" in Null to",r),Error("Attempting to set "+t+" in Null")}})}}class d extends f{isNull=!0;toString(){return""}toJSON(){return"null"}toJSONTag(){return l(this)+this.toJSON()}}class b{#e;constructor(e){if("string"!=typeof e)throw Error("not a url:",e);this.#e=""+e,a(this,"link")}static from(e){if(e instanceof b)return e;if("string"!=typeof e)throw Error("not a url:",e);return new b(e)}get value(){return this.#e}toString(){return this.#e}toJSON(){return'"'+this.#e+'"'}toJSONTag(){let e=c(this);return"<link"+(e?" "+e:"")+">"+this.toJSON()}}window.JSONTag={stringify:(t,n=null,a="")=>{let i=new WeakMap,u="",c="";if("number"==typeof a?u+=" ".repeat(a):"string"==typeof a&&(u=a),n&&"function"!=typeof n&&("object"!=typeof n||"number"!=typeof n.length))throw Error("JSONTag.stringify");let f=t=>{let r=c;c+=u;let a="",o="",i=Object.keys(t);Array.isArray(n)&&(i=i.filter(e=>-1!==n.indexOf(e))),c&&(a="\n"+c,o="\n"+r);let s=a+i.map(r=>e(r)+":"+b(r,t)).join(","+a)+o;return c=r,s},d=e=>{let t=c,r="",n="";(c+=u)&&(r="\n"+c,n="\n"+t);let a=r+e.map((t,r)=>b(r,e)).join(","+r)+n;return c=t,a},b=(t,u)=>{let c=u[t];if("function"==typeof n&&""!==t&&(c=n.call(u,t,c)),"object"==typeof c&&i.has(c)){let e=s(c,"id");return e||(e=function(e){if("undefined"==typeof crypto)throw console.error("JSONTag: cannot generate uuid, crypto support is disabled."),Error("Cannot create links to resolve references, crypto support is disabled");if("function"==typeof crypto.randomUUID)var t=crypto.randomUUID();else var t="10000000-1000-4000-8000-100000000000".replace(/[018]/g,e=>(e^crypto.getRandomValues(new Uint8Array(1))[0]&15>>e/4).toString(16));return o(e,"id",t),t}(c)),'<link>"'+e+'"'}if(null==c)return"null";if("object"==typeof c&&i.set(c,!0),"function"==typeof c.toJSONTag)return c.toJSONTag(i,n,a);if(Array.isArray(c))return l(c)+"["+d(c)+"]";if(!(c instanceof Object))return e(c,n,a);switch(r(c)){case"string":case"decimal":case"money":case"link":case"text":case"blob":case"color":case"email":case"hash":case"duration":case"phone":case"url":case"uuid":case"date":case"time":case"datetime":return l(c)+e(""+c,n,a);case"int":case"uint":case"int8":case"uint8":case"int16":case"uint16":case"int32":case"uint32":case"int64":case"uint64":case"float":case"float32":case"float64":case"timestamp":case"number":case"boolean":return l(c)+e(c,n,a);case"array":let b=d(c);return l(c)+"["+b+"}";case"object":if(null===c)return"null";let y=f(c);return l(c)+"{"+y+"}";default:throw Error(r(c)+" type not yet implemented")}};return b("",{"":t})},parse:function(e,t,n){let o,s,u,c;n||(n={}),n.index||(n.index={}),n.index.id||(n.index.id=new Map),n.unresolved||(n.unresolved=new Map),n.baseURL||(n.baseURL="http://localhost/");let l={'"':'"',"\\":"\\","/":"/",b:"\b",f:"\f",n:"\n",r:"\r",t:"	"},f=function(t){let r=e.substring(o-100,o+100);throw{name:"SyntaxError",message:t,at:o,input:r}},b=function(t){return t&&t!==s&&f("Expected '"+t+"' instead of '"+s+"'"),s=e.charAt(o),o+=1,s},y=function(e){let t="";for("-"===s&&(t="-",b("-"));s>="0"&&s<="9";)t+=s,b();if("."===s)for(t+=".";b()&&s>="0"&&s<="9";)t+=s;if("e"===s||"E"===s)for(t+=s,b(),("-"===s||"+"===s)&&(t+=s,b());s>="0"&&s<="9";)t+=s,b();let r=new Number(t).valueOf();if(e)switch(e){case"int":h(t);break;case"uint":h(t,[0,1/0]);break;case"int8":h(t,[-128,127]);break;case"uint8":h(t,[0,255]);break;case"int16":h(t,[-32768,32767]);break;case"uint16":h(t,[0,65535]);break;case"int32":h(t,[-2147483648,2147483647]);break;case"uint32":h(t,[0,4294967295]);break;case"timestamp":case"int64":h(t,[-0x8000000000000000,0x7fffffffffffffff]);break;case"uint64":h(t,[0,18446744073709552e3]);break;case"float":m(t);break;case"float32":m(t,[-34e37,34e37]);break;case"float64":m(t,[-17e307,17e307]);break;case"number":break;default:p(e,t)}return r},p=function(e,t){f("Syntax error, expected "+e+", got: "+t)},g={color:/^(rgb|hsl)a?\((\d+%?(deg|rad|grad|turn)?[,\s]+){2,3}[\s\/]*[\d\.]+%?\)$/i,email:/^[A-Za-z0-9_!#$%&'*+\/=?`{|}~^.-]+@[A-Za-z0-9.-]+$/,uuid:/^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/,decimal:/^\d*\.?\d*$/,money:/^[A-Z]+\$\d*\.?\d*$/,duration:/^(-?)P(?=\d|T\d)(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)([DW]))?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/,phone:/^[+]?(?:\(\d+(?:\.\d+)?\)|\d+(?:\.\d+)?)(?:[ -]?(?:\(\d+(?:\.\d+)?\)|\d+(?:\.\d+)?))*(?:[ ]?(?:x|ext)\.?[ ]?\d{1,5})?$/,time:/^(\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?$/,date:/^-?[1-9][0-9]{3,}-([0][1-9]|[1][0-2])-([1-2][0-9]|[0][1-9]|[3][0-1])$/,datetime:/^(\d{4,})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?Z?$/,range:/^\[-?(\d+\.)?\d+\,-?(\d+\.)?\d+\]$/},m=function(e,t){let r=new Number(parseFloat(e)),n=r.toString();e!==n&&f("Syntax Error: expected float value"),t&&("number"==typeof t[0]&&r<t[0]&&f("Syntax Error: float value out of range"),"number"==typeof t[1]&&r>t[1]&&f("Syntax Error: float value out of range"))},h=function(e,t){let r=new Number(parseInt(e)),n=r.toString();e!==n&&f("Syntax Error: expected integer value"),t&&("number"==typeof t[0]&&r<t[0]&&f("Syntax Error: integer value out of range"),"number"==typeof t[1]&&r>t[1]&&f("Syntax Error: integer value out of range"))},x=function(e){let t=!1;return"#"===e.charAt(0)?(t=[3,4,6,8].indexOf((e=e.substring(1)).length)>-1&&!isNaN(parseInt(e,16))).toString(16)!==e&&p("color",e):t=g.color.test(e),t||p("color",e),!0},S=function(e){try{return new URL(e,n.baseURL),!0}catch(t){console.log(t),p("url",e)}},w=function(e,t){if(e){switch(e){case"object":case"array":case"int8":case"uint8":case"int16":case"uint16":case"int32":case"uint32":case"int64":case"uint64":case"int":case"uint":case"float32":case"float64":case"float":case"timestamp":p(e,t);break;case"uuid":return g.uuid.test(t)||p("uuid",t),!0;case"decimal":return g.decimal.test(t)||p("decimal",t),!0;case"money":return g.money.test(t)||p("money",t),!0;case"url":return S(t);case"link":case"string":case"text":case"blob":case"hash":return!0;case"color":return x(t);case"email":return g.email.test(t)||p("email",t),!0;case"duration":return g.duration.test(t)||p("duration",t),!0;case"phone":return g.phone.test(t)||p("phone",t),!0;case"range":return g.range.test(t)||p("range",t),!0;case"time":return g.time.test(t)||p("time",t),!0;case"date":return g.date.test(t)||p("date",t),!0;case"datetime":return g.datetime.test(t)||p("datetime",t),!0}f("Syntax error: unknown tagName "+e)}},k=function(e){let t="",r,n,a;for('"'!==s&&f("Syntax Error"),b('"');s;){if('"'===s)return b(),w(e,t),t;if("\\"===s){if(b(),"u"===s){for(n=0,a=0;n<4&&isFinite(r=parseInt(b(),16));n++)a=16*a+r;t+=String.fromCharCode(a),b()}else if("string"==typeof l[s])t+=l[s],b();else break}else t+=s,b()}f("Syntax error: incomplete string")},v=function(){let e,t,r={attributes:{}};for("<"!==s&&f("Syntax Error"),b("<"),(e=A())||f("Syntax Error: expected tag name"),r.tagName=e,N();s;){if(">"===s)return b(">"),r;(e=A())||f("Syntax Error: expected attribute name"),N(),b("="),N(),t=k(),r.attributes[e]=t,N()}f("Syntax Error: unexpected end of input")},N=function(){for(;s;)switch(s){case" ":case"	":case"\r":case"\n":b();break;default:return}},A=function(){let e="";for(s>="a"&&s<="z"||s>="A"&&s<="Z"?(e+=s,b()):f("Syntax Error: expected word");s>="a"&&s<="z"||s>="A"&&s<="Z"||s>="0"&&s<="9"||"_"==s;)e+=s,b();return e},E=function(e){let t=A();switch(t&&"string"==typeof t||f('Syntax error: expected boolean or null, got "'+t+'"'),t.toLowerCase()){case"true":return e&&"boolean"!==e&&p(e,t),!0;case"false":return e&&"boolean"!==e&&p(e,t),!1;case"null":return null;default:f('Syntax error: expected boolean or null, got "'+t+'"')}},j=function(e,t,a){if("link"===r(e)){let r=""+e,o=n.unresolved.get(r);void 0===o&&(n.unresolved.set(r,[]),o=n.unresolved.get(r)),o.push({src:new WeakRef(t),key:a})}},O=function(){let e,t=[];if("["!==s&&f("Syntax error"),b("["),N(),"]"===s)return b("]"),t;for(;s;){if(e=u(),j(e,t,t.length),t.push(e),N(),"]"===s)return b("]"),t;b(","),N()}f("Input stopped early")},T=function(){let e,t,r={};if("{"!==s&&f("Syntax Error"),b("{"),N(),"}"===s)return b("}"),r;for(;s;){if("__proto__"===(e=k())&&f("Attempt at prototype pollution"),N(),b(":"),t=u(),r[e]=t,j(t,r,e),N(),"}"===s)return b("}"),r;b(","),N()}f("Input stopped early")};u=function(){let e,t,r;switch(N(),"<"===s&&(r=(e=v()).tagName,N()),s){case"{":r&&"object"!==r&&p(r,s),t=T();break;case"[":r&&"array"!==r&&p(r,s),t=O();break;case'"':t=k(r);break;case"-":t=y(r);break;default:t=s>="0"&&s<="9"?y(r):E(r)}if(e){if(null===t&&(t=new d),"object"!=typeof t)switch(typeof t){case"string":t=new String(t);break;case"number":t=new Number(t);break;default:f("Syntax Error: unexpected type "+typeof t)}e.tagName&&a(t,e.tagName),e.attributes&&(i(t,e.attributes),e.attributes?.id&&n.index.id.set(e.attributes.id,new WeakRef(t)))}return t},o=0,s=" ",c=u(),N(),s&&f("Syntax error"),"function"==typeof t&&function e(a,o){var i,s,u=a[o];if(null!==u&&"object"==typeof u&&!(u instanceof String||u instanceof Number||u instanceof Boolean))for(i in u)Object.prototype.hasOwnProperty.call(u,i)&&(void 0!==(s=e(u,i))&&(void 0===u[i]||u[i]!==s)?(u[i]=s,"link"===r(s)&&j(s,u,i)):void 0===s&&delete u[i]);return t.call(a,o,u,n)}({"":c},"");let J=function(e,t){if(void 0!==t){let n=e.src.deref();if(void 0!==n&&"link"===r(n[e.key]))return n[e.key]=t,!0}};return n.index.id.size>n.unresolved.size?n.unresolved.forEach((e,t)=>{let r=n.index.id.get(t)?.deref();void 0!==r&&e.forEach((t,n)=>{J(t,r)&&delete e[n]})}):n.index.id.forEach((e,t)=>{let r=e.deref(),a=n.unresolved.get(t);void 0!==r&&void 0!==a&&(a.forEach((e,t)=>{J(e,r)}),n.unresolved.delete(t))}),c},getType:r,setType:a,getTypeString:l,setAttribute:o,getAttribute:s,addAttribute:(e,r,n)=>{if("string"!=typeof n)throw TypeError("attribute values must be a string");if(-1!==n.indexOf('"'))throw TypeError('attribute values must not contain " characters');let a=t.get(e)||{attributes:{}};void 0===a.attributes[r]?o(e,r,n):(Array.isArray(a.attributes[r])||(a.attributes[r]=[a.attributes[r]]),n=-1!==n.indexOf(" ")?n.split(" "):[n],a.attributes[r]=a.attributes[r].concat(n),t.set(e,a))},removeAttribute:(e,r)=>{let n=t.get(e)||{attributes:{}};void 0!==n.attributes[r]&&(delete n.attributes[r],t.set(e,n))},getAttributes:u,setAttributes:i,getAttributesString:c,isNull:e=>null===e||void 0!==e.isNull&&e.isNull,clone:e=>{let t=l(e),n=r(e),o=u(e),s=function(e){return e instanceof Number?new Number(e):e instanceof Boolean?new Boolean(e):e instanceof String?new String(e):Array.isArray(e)?[...e]:{...e}}(e);return t&&(a(s,n),o&&i(s,o)),s},Link:b,Null:d}})();
+(() => {
+  // src/lib/functions.mjs
+  var jsonStringify = JSON.stringify;
+  var stringify = (value, replacer = null, space = "") => {
+    const objectReferences = /* @__PURE__ */ new WeakMap();
+    let indent = "";
+    let gap = "";
+    if (typeof space === "number") {
+      indent += " ".repeat(space);
+    } else if (typeof space === "string") {
+      indent = space;
+    }
+    if (replacer && typeof replacer !== "function" && (typeof replacer !== "object" || typeof replacer.length !== "number")) {
+      throw new Error("JSONTag.stringify");
+    }
+    const encodeProperties = (obj) => {
+      let mind = gap;
+      gap += indent;
+      let gapstart = "";
+      let gapend = "";
+      let keys = Object.keys(obj);
+      if (Array.isArray(replacer)) {
+        keys = keys.filter((key) => replacer.indexOf(key) !== -1);
+      }
+      if (gap) {
+        gapstart = "\n" + gap;
+        gapend = "\n" + mind;
+      }
+      let result2 = gapstart + keys.map((prop) => {
+        return jsonStringify(prop) + ":" + str(prop, obj);
+      }).join("," + gapstart) + gapend;
+      gap = mind;
+      return result2;
+    };
+    const encodeEntries = (arr) => {
+      let mind = gap;
+      gap += indent;
+      let gapstart = "";
+      let gapend = "";
+      if (gap) {
+        gapstart = "\n" + gap;
+        gapend = "\n" + mind;
+      }
+      let result2 = gapstart + arr.map((value2, index) => {
+        return str(index, arr);
+      }).join("," + gapstart) + gapend;
+      gap = mind;
+      return result2;
+    };
+    const checkCircular = /* @__PURE__ */ new WeakMap();
+    function createIds(value2) {
+      if (Array.isArray(value2)) {
+        for (let v of value2) {
+          createIds(v);
+        }
+      } else if (value2 && getType(value2) == "object") {
+        if (checkCircular.has(value2)) {
+          let id = getAttribute(value2, "id");
+          if (!id) {
+            createId(value2);
+          }
+        } else {
+          checkCircular.set(value2, true);
+          for (let v of Object.values(value2)) {
+            createIds(v);
+          }
+        }
+      }
+    }
+    const str = (key, holder) => {
+      let value2 = holder[key];
+      if (typeof replacer === "function" && key !== "") {
+        value2 = replacer.call(holder, key, value2);
+      }
+      if (getType(value2) === "object" && objectReferences.has(value2)) {
+        let id = getAttribute(value2, "id");
+        if (!id) {
+          id = createId(value2);
+        }
+        return '<link>"' + id + '"';
+      }
+      if (typeof value2 === "undefined" || value2 === null) {
+        return "null";
+      }
+      if (getType(value2) === "object") {
+        objectReferences.set(value2, true);
+      }
+      if (typeof value2.toJSONTag == "function") {
+        return value2.toJSONTag(objectReferences, replacer, space);
+      } else if (Array.isArray(value2)) {
+        return getTypeString(value2) + "[" + encodeEntries(value2) + "]";
+      } else if (value2 instanceof Object) {
+        switch (getType(value2)) {
+          case "string":
+          case "decimal":
+          case "money":
+          case "link":
+          case "text":
+          case "blob":
+          case "color":
+          case "email":
+          case "hash":
+          case "duration":
+          case "phone":
+          case "url":
+          case "uuid":
+          case "date":
+          case "time":
+          case "datetime":
+            return getTypeString(value2) + jsonStringify("" + value2, replacer, space);
+            break;
+          case "int":
+          case "uint":
+          case "int8":
+          case "uint8":
+          case "int16":
+          case "uint16":
+          case "int32":
+          case "uint32":
+          case "int64":
+          case "uint64":
+          case "float":
+          case "float32":
+          case "float64":
+          case "timestamp":
+          case "number":
+          case "boolean":
+            return getTypeString(value2) + jsonStringify(value2, replacer, space);
+            break;
+          case "array":
+            let entries = encodeEntries(value2);
+            return getTypeString(value2) + "[" + entries + "}";
+            break;
+          case "object":
+            if (value2 === null) {
+              return "null";
+            }
+            let props = encodeProperties(value2);
+            return getTypeString(value2) + "{" + props + "}";
+            break;
+          default:
+            throw new Error(getType(value2) + " type not yet implemented");
+            break;
+        }
+      } else {
+        return jsonStringify(value2, replacer, space);
+      }
+    };
+    createIds(value);
+    const result = str("", { "": value });
+    return result;
+  };
+  function createId(value) {
+    if (typeof crypto.randomUUID === "function") {
+      var id = crypto.randomUUID();
+    } else {
+      let replacer = (c) => c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4;
+      if (typeof crypto === "undefined") {
+        replacer = (c) => c ^ Math.random() * 256 & 15 >> c / 4;
+      }
+      var id = ("10000000-1000-4000-8000" + -1e11).replace(/[018]/g, (c) => replacer(c).toString(16));
+    }
+    setAttribute(value, "id", id);
+    return id;
+  }
+  var isNull = (v) => {
+    let result = v === null || typeof v.isNull !== "undefined" && v.isNull;
+    return result;
+  };
+  if (!globalThis.JSONTagTypeInfo) {
+    globalThis.JSONTagTypeInfo = /* @__PURE__ */ new WeakMap();
+  }
+  var typeInfo = globalThis.JSONTagTypeInfo;
+  var getType = (obj) => {
+    if (typeInfo.has(obj)) {
+      let info = typeInfo.get(obj);
+      if (info.type) {
+        return info.type;
+      }
+    }
+    if (Array.isArray(obj)) {
+      return "array";
+    }
+    if (obj instanceof Number) {
+      return "number";
+    }
+    if (obj instanceof Boolean) {
+      return "boolean";
+    }
+    return typeof obj;
+  };
+  var types = [
+    "object",
+    "array",
+    "string",
+    "number",
+    "boolean",
+    // JSON
+    "decimal",
+    "money",
+    "uuid",
+    "url",
+    "link",
+    "date",
+    "time",
+    "datetime",
+    "duration",
+    "timestamp",
+    "text",
+    "blob",
+    "color",
+    "email",
+    "hash",
+    "phone",
+    "int",
+    "int8",
+    "int16",
+    "int32",
+    "int64",
+    "uint",
+    "uint8",
+    "uint16",
+    "uint32",
+    "uint64",
+    "float",
+    "float32",
+    "float64"
+  ];
+  var setType = (obj, type) => {
+    if (typeof obj !== "object") {
+      throw new TypeError("JSONTag can only add attributes to objects, convert literals to objects first");
+    }
+    let info = {};
+    if (typeInfo.has(obj)) {
+      info = typeInfo.get(obj);
+    }
+    if (!types.includes(type)) {
+      throw new TypeError("unknown type " + type);
+    }
+    info.type = type;
+    if (typeof info.attributes === "undefined") {
+      info.attributes = {};
+    }
+    typeInfo.set(obj, info);
+  };
+  var setAttribute = (obj, attr, value) => {
+    if (typeof obj !== "object") {
+      throw new TypeError("JSONTag can only add attributes to objects, convert literals to objects first");
+    }
+    if (Array.isArray(value)) {
+      value = value.join(" ");
+    }
+    if (typeof value !== "string") {
+      throw new TypeError("attribute values must be a string or an array of strings");
+    }
+    if (value.indexOf('"') !== -1) {
+      throw new TypeError('attribute values must not contain " character');
+    }
+    if (value.indexOf(" ") !== -1) {
+      value = value.split(" ");
+    }
+    let info = typeInfo.get(obj) || { attributes: {} };
+    info.attributes[attr] = value;
+    typeInfo.set(obj, info);
+  };
+  var setAttributes = (obj, attributes) => {
+    if (typeof obj !== "object") {
+      throw new TypeError("JSONTag can only add attributes to objects, convert literals to objects first");
+    }
+    if (typeof attributes !== "object") {
+      throw new TypeError("attributes param must be an object");
+    }
+    Object.keys(attributes).forEach((key) => {
+      setAttribute(obj, key, attributes[key]);
+    });
+  };
+  var getAttribute = (obj, attr) => {
+    let info = typeInfo.get(obj) || { attributes: {} };
+    return info.attributes[attr];
+  };
+  var addAttribute = (obj, attr, value) => {
+    if (typeof value !== "string") {
+      throw new TypeError("attribute values must be a string");
+    }
+    if (value.indexOf('"') !== -1) {
+      throw new TypeError('attribute values must not contain " characters');
+    }
+    let info = typeInfo.get(obj) || { attributes: {} };
+    if (typeof info.attributes[attr] === "undefined") {
+      setAttribute(obj, attr, value);
+    } else {
+      if (!Array.isArray(info.attributes[attr])) {
+        info.attributes[attr] = [info.attributes[attr]];
+      }
+      if (value.indexOf(" ") !== -1) {
+        value = value.split(" ");
+      } else {
+        value = [value];
+      }
+      info.attributes[attr] = info.attributes[attr].concat(value);
+      typeInfo.set(obj, info);
+    }
+  };
+  var removeAttribute = (obj, attr) => {
+    let info = typeInfo.get(obj) || { attributes: {} };
+    if (typeof info.attributes[attr] !== "undefined") {
+      delete info.attributes[attr];
+      typeInfo.set(obj, info);
+    }
+  };
+  var getAttributes = (obj) => {
+    let info = typeInfo.get(obj) || { attributes: {} };
+    return Object.assign({}, info.attributes);
+  };
+  var getAttributesString = (obj) => {
+    return Object.entries(getAttributes(obj)).map(([attr, attrValue]) => {
+      if (Array.isArray(attrValue)) {
+        attrValue = attrValue.join(" ");
+      }
+      return attr + '="' + attrValue + '"';
+    }).join(" ");
+  };
+  var getTypeString = (obj) => {
+    let type = getType(obj);
+    let attributes = getAttributes(obj);
+    let attributesString = Object.entries(attributes).map(([attr, attrValue]) => {
+      if (Array.isArray(attrValue)) {
+        attrValue = attrValue.join(" ");
+      }
+      return attr + '="' + attrValue + '"';
+    }).join(" ");
+    if (!attributesString) {
+      if (["object", "array", "string", "number", "boolean"].indexOf(type) !== -1) {
+        type = "";
+      }
+    }
+    if (type || attributesString) {
+      return "<" + [type, attributesString].filter(Boolean).join(" ") + ">";
+    } else {
+      return "";
+    }
+  };
+  function shallowClone(o) {
+    if (o instanceof Number) {
+      return new Number(o);
+    }
+    if (o instanceof Boolean) {
+      return new Boolean(o);
+    }
+    if (o instanceof String) {
+      return new String(o);
+    }
+    if (Array.isArray(o)) {
+      return [...o];
+    }
+    return { ...o };
+  }
+  var clone = (obj) => {
+    let typeString = getTypeString(obj);
+    let type = getType(obj);
+    let attributes = getAttributes(obj);
+    let clone2 = shallowClone(obj);
+    if (typeString) {
+      setType(clone2, type);
+      if (attributes) {
+        setAttributes(clone2, attributes);
+      }
+    }
+    return clone2;
+  };
+
+  // src/lib/Null.mjs
+  var ExtendableProxy = class {
+    constructor() {
+      return new Proxy(this, {
+        get: (target, name) => {
+          if (typeof target[name] !== "undefined") {
+            return target[name];
+          }
+          if (name == "then" || typeof name == "symbol") {
+            return void 0;
+          }
+          console.error("Attempting to get from Null", name, typeof name, JSON.stringify(name));
+          throw new Error("Attempting to get " + name + " from Null");
+        },
+        set: (target, name, newValue) => {
+          console.error("Attempting to set " + name + " in Null to", newValue);
+          throw new Error("Attempting to set " + name + " in Null");
+        }
+      });
+    }
+  };
+  var Null = class extends ExtendableProxy {
+    isNull = true;
+    toString() {
+      return "";
+    }
+    toJSON() {
+      return "null";
+    }
+    toJSONTag() {
+      let type = getTypeString(this);
+      return type + this.toJSON();
+    }
+  };
+
+  // src/lib/Link.mjs
+  var Link = class _Link {
+    #url;
+    constructor(url) {
+      if (typeof url !== "string") {
+        throw new Error("not a url:", url);
+      }
+      this.#url = "" + url;
+      setType(this, "link");
+    }
+    static from(url) {
+      if (url instanceof _Link) {
+        return url;
+      }
+      if (typeof url !== "string") {
+        throw new Error("not a url:", url);
+      }
+      return new _Link(url);
+    }
+    get value() {
+      return this.#url;
+    }
+    toString() {
+      return this.#url;
+    }
+    toJSON() {
+      return '"' + this.#url + '"';
+    }
+    toJSONTag() {
+      let attributes = getAttributesString(this);
+      return "<link" + (attributes ? " " + attributes : "") + ">" + this.toJSON();
+    }
+  };
+
+  // src/lib/fast-parse.mjs
+  function parse(input, reviver, meta) {
+    if (!meta) {
+      meta = {};
+    }
+    if (!meta.index) {
+      meta.index = {};
+    }
+    if (!meta.index.id) {
+      meta.index.id = /* @__PURE__ */ new Map();
+    }
+    if (!meta.unresolved) {
+      meta.unresolved = /* @__PURE__ */ new Map();
+    }
+    if (!meta.baseURL) {
+      meta.baseURL = "http://localhost/";
+    }
+    let at, ch, value, result;
+    let escapee = {
+      '"': '"',
+      "\\": "\\",
+      "/": "/",
+      b: "\b",
+      f: "\f",
+      n: "\n",
+      r: "\r",
+      t: "	"
+    };
+    let error = function(m) {
+      let context = input.substring(at - 100, at + 100);
+      throw {
+        name: "SyntaxError",
+        message: m,
+        at,
+        input: context
+      };
+    };
+    let next = function(c) {
+      if (c && c !== ch) {
+        error("Expected '" + c + "' instead of '" + ch + "'");
+      }
+      ch = input.charAt(at);
+      at += 1;
+      return ch;
+    };
+    let number = function(tagName) {
+      let numString = "";
+      if (ch === "-") {
+        numString = "-";
+        next("-");
+      }
+      while (ch >= "0" && ch <= "9") {
+        numString += ch;
+        next();
+      }
+      if (ch === ".") {
+        numString += ".";
+        while (next() && ch >= "0" && ch <= "9") {
+          numString += ch;
+        }
+      }
+      if (ch === "e" || ch === "E") {
+        numString += ch;
+        next();
+        if (ch === "-" || ch === "+") {
+          numString += ch;
+          next();
+        }
+        while (ch >= "0" && ch <= "9") {
+          numString += ch;
+          next();
+        }
+      }
+      let result2 = new Number(numString).valueOf();
+      if (tagName) {
+        switch (tagName) {
+          case "int":
+            isInt(numString);
+            break;
+          case "uint":
+            isInt(numString, [0, Infinity]);
+            break;
+          case "int8":
+            isInt(numString, [-128, 127]);
+            break;
+          case "uint8":
+            isInt(numString, [0, 255]);
+            break;
+          case "int16":
+            isInt(numString, [-32768, 32767]);
+            break;
+          case "uint16":
+            isInt(numString, [0, 65535]);
+            break;
+          case "int32":
+            isInt(numString, [-2147483648, 2147483647]);
+            break;
+          case "uint32":
+            isInt(numString, [0, 4294967295]);
+            break;
+          case "timestamp":
+          case "int64":
+            isInt(numString, [-9223372036854776e3, 9223372036854776e3]);
+            break;
+          case "uint64":
+            isInt(numString, [0, 18446744073709552e3]);
+            break;
+          case "float":
+            isFloat(numString);
+            break;
+          case "float32":
+            isFloat(numString, [-34e37, 34e37]);
+            break;
+          case "float64":
+            isFloat(numString, [-17e307, 17e307]);
+            break;
+          case "number":
+            break;
+          default:
+            isTypeError(tagName, numString);
+            break;
+        }
+      }
+      return result2;
+    };
+    let isTypeError = function(type, value2) {
+      error("Syntax error, expected " + type + ", got: " + value2);
+    };
+    const regexes = {
+      color: /^(rgb|hsl)a?\((\d+%?(deg|rad|grad|turn)?[,\s]+){2,3}[\s\/]*[\d\.]+%?\)$/i,
+      email: /^[A-Za-z0-9_!#$%&'*+\/=?`{|}~^.-]+@[A-Za-z0-9.-]+$/,
+      uuid: /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/,
+      decimal: /^\d*\.?\d*$/,
+      money: /^[A-Z]+\$\d*\.?\d*$/,
+      duration: /^(-?)P(?=\d|T\d)(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)([DW]))?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/,
+      phone: /^[+]?(?:\(\d+(?:\.\d+)?\)|\d+(?:\.\d+)?)(?:[ -]?(?:\(\d+(?:\.\d+)?\)|\d+(?:\.\d+)?))*(?:[ ]?(?:x|ext)\.?[ ]?\d{1,5})?$/,
+      time: /^(\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?$/,
+      date: /^-?[1-9][0-9]{3,}-([0][1-9]|[1][0-2])-([1-2][0-9]|[0][1-9]|[3][0-1])$/,
+      datetime: /^(\d{4,})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?Z?$/,
+      range: /^\[-?(\d+\.)?\d+\,-?(\d+\.)?\d+\]$/
+    };
+    let isFloat = function(float, range) {
+      let test = new Number(parseFloat(float));
+      let str = test.toString();
+      if (float !== str) {
+        error("Syntax Error: expected float value");
+      }
+      if (range) {
+        if (typeof range[0] === "number") {
+          if (test < range[0]) {
+            error("Syntax Error: float value out of range");
+          }
+        }
+        if (typeof range[1] === "number") {
+          if (test > range[1]) {
+            error("Syntax Error: float value out of range");
+          }
+        }
+      }
+    };
+    let isInt = function(int, range) {
+      let test = new Number(parseInt(int));
+      let str = test.toString();
+      if (int !== str) {
+        error("Syntax Error: expected integer value");
+      }
+      if (range) {
+        if (typeof range[0] === "number") {
+          if (test < range[0]) {
+            error("Syntax Error: integer value out of range");
+          }
+        }
+        if (typeof range[1] === "number") {
+          if (test > range[1]) {
+            error("Syntax Error: integer value out of range");
+          }
+        }
+      }
+    };
+    let isColor = function(color) {
+      let result2 = false;
+      if (color.charAt(0) === "#") {
+        color = color.substring(1);
+        result2 = [3, 4, 6, 8].indexOf(color.length) > -1 && !isNaN(parseInt(color, 16));
+        if (result2.toString(16) !== color) {
+          isTypeError("color", color);
+        }
+      } else {
+        result2 = regexes.color.test(color);
+      }
+      if (!result2) {
+        isTypeError("color", color);
+      }
+      return true;
+    };
+    let isEmail = function(email) {
+      let result2 = regexes.email.test(email);
+      if (!result2) {
+        isTypeError("email", email);
+      }
+      return true;
+    };
+    let isUuid = function(uuid) {
+      let result2 = regexes.uuid.test(uuid);
+      if (!result2) {
+        isTypeError("uuid", uuid);
+      }
+      return true;
+    };
+    let isDecimal = function(decimal) {
+      let result2 = regexes.decimal.test(decimal);
+      if (!result2) {
+        isTypeError("decimal", decimal);
+      }
+      return true;
+    };
+    let isMoney = function(money) {
+      let result2 = regexes.money.test(money);
+      if (!result2) {
+        isTypeError("money", money);
+      }
+      return true;
+    };
+    let isUrl = function(url) {
+      try {
+        return Boolean(new URL(url, meta.baseURL));
+      } catch (e) {
+        console.log(e);
+        isTypeError("url", url);
+      }
+    };
+    let isDuration = function(duration) {
+      let result2 = regexes.duration.test(duration);
+      if (!result2) {
+        isTypeError("duration", duration);
+      }
+      return true;
+    };
+    let isPhone = function(phone) {
+      let result2 = regexes.phone.test(phone);
+      if (!result2) {
+        isTypeError("phone", phone);
+      }
+      return true;
+    };
+    let isRange = function(range) {
+      let result2 = regexes.range.test(range);
+      if (!result2) {
+        isTypeError("range", range);
+      }
+      return true;
+    };
+    let isTime = function(time) {
+      let result2 = regexes.time.test(time);
+      if (!result2) {
+        isTypeError("time", time);
+      }
+      return true;
+    };
+    let isDate = function(date) {
+      let result2 = regexes.date.test(date);
+      if (!result2) {
+        isTypeError("date", date);
+      }
+      return true;
+    };
+    let isDatetime = function(datetime) {
+      let result2 = regexes.datetime.test(datetime);
+      if (!result2) {
+        isTypeError("datetime", datetime);
+      }
+      return true;
+    };
+    let checkStringType = function(tagName, value2) {
+      if (!tagName) {
+        return;
+      }
+      switch (tagName) {
+        case "object":
+        case "array":
+        case "int8":
+        case "uint8":
+        case "int16":
+        case "uint16":
+        case "int32":
+        case "uint32":
+        case "int64":
+        case "uint64":
+        case "int":
+        case "uint":
+        case "float32":
+        case "float64":
+        case "float":
+        case "timestamp":
+          isTypeError(tagName, value2);
+          break;
+        case "uuid":
+          return isUuid(value2);
+        case "decimal":
+          return isDecimal(value2);
+        case "money":
+          return isMoney(value2);
+        case "url":
+          return isUrl(value2);
+        case "link":
+        case "string":
+        case "text":
+        case "blob":
+        case "hash":
+          return true;
+        case "color":
+          return isColor(value2);
+        case "email":
+          return isEmail(value2);
+        case "duration":
+          return isDuration(value2);
+        case "phone":
+          return isPhone(value2);
+        case "range":
+          return isRange(value2);
+        case "time":
+          return isTime(value2);
+        case "date":
+          return isDate(value2);
+        case "datetime":
+          return isDatetime(value2);
+      }
+      error("Syntax error: unknown tagName " + tagName);
+    };
+    let string = function(tagName) {
+      let value2 = "", hex, i, uffff;
+      if (ch !== '"') {
+        error("Syntax Error");
+      }
+      next('"');
+      while (ch) {
+        if (ch === '"') {
+          next();
+          checkStringType(tagName, value2);
+          return value2;
+        }
+        if (ch === "\\") {
+          next();
+          if (ch === "u") {
+            uffff = 0;
+            for (i = 0; i < 4; i++) {
+              hex = parseInt(next(), 16);
+              if (!isFinite(hex)) {
+                break;
+              }
+              uffff = uffff * 16 + hex;
+            }
+            value2 += String.fromCharCode(uffff);
+            next();
+          } else if (typeof escapee[ch] === "string") {
+            value2 += escapee[ch];
+            next();
+          } else {
+            break;
+          }
+        } else {
+          value2 += ch;
+          next();
+        }
+      }
+      error("Syntax error: incomplete string");
+    };
+    let tag = function() {
+      let key, val, tagOb = {
+        attributes: {}
+      };
+      if (ch !== "<") {
+        error("Syntax Error");
+      }
+      next("<");
+      key = word();
+      if (!key) {
+        error("Syntax Error: expected tag name");
+      }
+      tagOb.tagName = key;
+      whitespace();
+      while (ch) {
+        if (ch === ">") {
+          next(">");
+          return tagOb;
+        }
+        key = word();
+        if (!key) {
+          error("Syntax Error: expected attribute name");
+        }
+        whitespace();
+        next("=");
+        whitespace();
+        val = string();
+        tagOb.attributes[key] = val;
+        whitespace();
+      }
+      error("Syntax Error: unexpected end of input");
+    };
+    let whitespace = function() {
+      while (ch) {
+        switch (ch) {
+          case " ":
+          case "	":
+          case "\r":
+          case "\n":
+            next();
+            break;
+          default:
+            return;
+            break;
+        }
+      }
+    };
+    let word = function() {
+      let val = "";
+      if (ch >= "a" && ch <= "z" || ch >= "A" && ch <= "Z") {
+        val += ch;
+        next();
+      } else {
+        error("Syntax Error: expected word");
+      }
+      while (ch >= "a" && ch <= "z" || ch >= "A" && ch <= "Z" || ch >= "0" && ch <= "9" || ch == "_") {
+        val += ch;
+        next();
+      }
+      return val;
+    };
+    let boolOrNull = function(tagName) {
+      let w = word();
+      if (!w || typeof w !== "string") {
+        error('Syntax error: expected boolean or null, got "' + w + '"');
+      }
+      switch (w.toLowerCase()) {
+        case "true":
+          if (tagName && tagName !== "boolean") {
+            isTypeError(tagName, w);
+          }
+          return true;
+          break;
+        case "false":
+          if (tagName && tagName !== "boolean") {
+            isTypeError(tagName, w);
+          }
+          return false;
+          break;
+        case "null":
+          return null;
+          break;
+        default:
+          error('Syntax error: expected boolean or null, got "' + w + '"');
+          break;
+      }
+    };
+    let checkUnresolved = function(item, object2, key) {
+      if (getType(item) === "link") {
+        let link = "" + item;
+        let links = meta.unresolved.get(link);
+        if (typeof links === "undefined") {
+          meta.unresolved.set(link, []);
+          links = meta.unresolved.get(link);
+        }
+        let count = links.push({
+          src: new WeakRef(object2),
+          key
+        });
+      }
+    };
+    let array = function() {
+      let item, array2 = [];
+      if (ch !== "[") {
+        error("Syntax error");
+      }
+      next("[");
+      whitespace();
+      if (ch === "]") {
+        next("]");
+        return array2;
+      }
+      while (ch) {
+        item = value();
+        checkUnresolved(item, array2, array2.length);
+        array2.push(item);
+        whitespace();
+        if (ch === "]") {
+          next("]");
+          return array2;
+        }
+        next(",");
+        whitespace();
+      }
+      error("Input stopped early");
+    };
+    let object = function() {
+      let key, val, object2 = {};
+      if (ch !== "{") {
+        error("Syntax Error");
+      }
+      next("{");
+      whitespace();
+      if (ch === "}") {
+        next("}");
+        return object2;
+      }
+      while (ch) {
+        key = string();
+        if (key === "__proto__") {
+          error("Attempt at prototype pollution");
+        }
+        whitespace();
+        next(":");
+        val = value();
+        object2[key] = val;
+        checkUnresolved(val, object2, key);
+        whitespace();
+        if (ch === "}") {
+          next("}");
+          return object2;
+        }
+        next(",");
+        whitespace();
+      }
+      error("Input stopped early");
+    };
+    value = function() {
+      let tagOb, result2, tagName;
+      whitespace();
+      if (ch === "<") {
+        tagOb = tag();
+        tagName = tagOb.tagName;
+        whitespace();
+      }
+      switch (ch) {
+        case "{":
+          if (tagName && tagName !== "object") {
+            isTypeError(tagName, ch);
+          }
+          result2 = object();
+          break;
+        case "[":
+          if (tagName && tagName !== "array") {
+            isTypeError(tagName, ch);
+          }
+          result2 = array();
+          break;
+        case '"':
+          result2 = string(tagName);
+          break;
+        case "-":
+          result2 = number(tagName);
+          break;
+        default:
+          if (ch >= "0" && ch <= "9") {
+            result2 = number(tagName);
+          } else {
+            result2 = boolOrNull(tagName);
+          }
+          break;
+      }
+      if (tagOb) {
+        if (result2 === null) {
+          result2 = new Null();
+        }
+        if (typeof result2 !== "object") {
+          switch (typeof result2) {
+            case "string":
+              result2 = new String(result2);
+              break;
+            case "number":
+              result2 = new Number(result2);
+              break;
+            default:
+              error("Syntax Error: unexpected type " + typeof result2);
+              break;
+          }
+        }
+        if (tagOb.tagName) {
+          setType(result2, tagOb.tagName);
+        }
+        if (tagOb.attributes) {
+          setAttributes(result2, tagOb.attributes);
+          if (tagOb.attributes?.id) {
+            meta.index.id.set(tagOb.attributes.id, new WeakRef(result2));
+          }
+        }
+      }
+      return result2;
+    };
+    at = 0;
+    ch = " ";
+    result = value();
+    whitespace();
+    if (ch) {
+      error("Syntax error");
+    }
+    if (typeof reviver === "function") {
+      let walk = function(holder, key) {
+        var k;
+        var v;
+        var value2 = holder[key];
+        if (value2 !== null && typeof value2 === "object" && !(value2 instanceof String || value2 instanceof Number || value2 instanceof Boolean)) {
+          for (k in value2) {
+            if (Object.prototype.hasOwnProperty.call(value2, k)) {
+              v = walk(value2, k);
+              if (v !== void 0 && (typeof value2[k] === "undefined" || value2[k] !== v)) {
+                value2[k] = v;
+                if (getType(v) === "link") {
+                  checkUnresolved(v, value2, k);
+                }
+              } else if (v === void 0) {
+                delete value2[k];
+              }
+            }
+          }
+        }
+        return reviver.call(holder, key, value2, meta);
+      };
+      walk({ "": result }, "");
+    }
+    let replaceLink = function(u, value2) {
+      if (typeof value2 !== "undefined") {
+        let src = u.src.deref();
+        if (typeof src !== "undefined" && getType(src[u.key]) === "link") {
+          src[u.key] = value2;
+          return true;
+        }
+      }
+    };
+    if (meta.index.id.size > meta.unresolved.size) {
+      meta.unresolved.forEach((links, id) => {
+        let value2 = meta.index.id.get(id)?.deref();
+        if (value2 !== void 0) {
+          links.forEach((u, i) => {
+            if (replaceLink(u, value2)) {
+              delete links[i];
+            }
+          });
+        }
+      });
+    } else {
+      meta.index.id.forEach((ref, id) => {
+        let value2 = ref.deref();
+        let links = meta.unresolved.get(id);
+        if (value2 !== void 0 && typeof links !== "undefined") {
+          links.forEach((u, i) => {
+            replaceLink(u, value2);
+          });
+          meta.unresolved.delete(id);
+        }
+      });
+    }
+    return result;
+  }
+
+  // src/browser.mjs
+  window.JSONTag = {
+    stringify,
+    parse,
+    getType,
+    setType,
+    getTypeString,
+    setAttribute,
+    getAttribute,
+    addAttribute,
+    removeAttribute,
+    getAttributes,
+    setAttributes,
+    getAttributesString,
+    isNull,
+    clone,
+    Link,
+    Null
+  };
+})();
 //# sourceMappingURL=browser.js.map

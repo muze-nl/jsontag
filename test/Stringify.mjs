@@ -135,3 +135,16 @@ tap.test('Links', t => {
  	t.equal(s, jsont)
  	t.end()
  })
+
+ tap.test('links back', t => {
+ 	let data = [
+	 	{
+	 		name: 'Joe'
+	 	}
+ 	]
+ 	data.push(data[0])
+ 	let s = JSONTag.stringify(data)
+ 	let o = JSONTag.parse(s)
+ 	t.same(o[1], data[1])
+ 	t.end()
+ })

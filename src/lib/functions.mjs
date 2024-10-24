@@ -4,7 +4,7 @@ const jsonStringify = JSON.stringify
 
 export const stringify = (value, replacer=null, space="") => {
 
-	let references = new WeakMap()
+	const objectReferences = new WeakMap()
 
 	let indent = ""
 	let gap = ""
@@ -58,14 +58,39 @@ export const stringify = (value, replacer=null, space="") => {
 		return result
 	}
 
+	/**
+	 * Walks over all objects in value to set ids if needed
+	 */
+	const checkCircular = new WeakMap()
+	function createIds(value) {
+		if (Array.isArray(value)) {
+			for (let v of value) {
+				createIds(v)
+			}
+		} else if (value && getType(value)=='object') {
+			if (checkCircular.has(value)) {
+				let id = getAttribute(value, 'id')
+				if (!id) {
+					createId(value)
+				}
+			} else {
+				checkCircular.set(value, true)
+				for (let v of Object.values(value)) {
+					createIds(v)
+				}
+			}
+		}
+	}
+
 	const str = (key, holder) => {
 		let value = holder[key]
 		if (typeof replacer === 'function' && key!=='') {
 			value = replacer.call(holder, key, value)
 		}
-		if (typeof value === 'object' && references.has(value)) {
+		if (getType(value) === 'object' && objectReferences.has(value)) {
 			let id = getAttribute(value, 'id')
 			if (!id) {
+				// FIXME: this is too late, value may already have been stringified, without id earlier
 				id = createId(value)
 			}
 			return '<link>"'+id+'"'
@@ -73,11 +98,11 @@ export const stringify = (value, replacer=null, space="") => {
 		if (typeof value === 'undefined' || value === null) {
 			return 'null'
 		}
-		if (typeof value === 'object') {
-			references.set(value, true)
+		if (getType(value) === 'object') {
+			objectReferences.set(value, true)
 		}
 		if (typeof value.toJSONTag == 'function') {
-			return value.toJSONTag(references, replacer, space)
+			return value.toJSONTag(objectReferences, replacer, space)
 		} else if (Array.isArray(value)) {
 			return getTypeString(value) + "["+encodeEntries(value)+"]"
 		} else if (value instanceof Object) {
@@ -138,7 +163,11 @@ export const stringify = (value, replacer=null, space="") => {
 		}
 	}
 
-	return str("", {"": value})
+	// first check if there are circular references
+	// if so, make sure that the referenced objects have an id attribute
+	createIds(value)
+	const result = str("", {"": value})
+	return result
 }
 
 function createId(value) {
@@ -158,6 +187,7 @@ function createId(value) {
 	setAttribute(value, 'id', id)
 	return id
 }
+
 
 export const isNull = (v) => {
 	let result = (v === null) || (typeof v.isNull !== 'undefined' && v.isNull)
