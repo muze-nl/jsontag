@@ -36,8 +36,11 @@ export const stringify = (value, replacer=null, space="") => {
 			gapend = "\n"+mind
 		}
 		let result = gapstart+keys.map(prop => {
+			if (obj[prop]===undefined) {
+				return null
+			}
 			return jsonStringify(prop)+':'+str(prop, obj)
-		}).join(","+gapstart)+gapend
+		}).filter(Boolean).join(","+gapstart)+gapend
 		gap = mind
 		return result
 	}

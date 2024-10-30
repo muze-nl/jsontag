@@ -148,3 +148,11 @@ tap.test('Links', t => {
  	t.same(o[1], data[1])
  	t.end()
  })
+
+ tap.test('undefined', t => {
+ 	let data = [ undefined, { foo: undefined }]
+ 	let s = JSONTag.stringify(data)
+ 	let j = JSON.stringify(data)
+ 	t.same(s, j)
+ 	t.end()
+ })
