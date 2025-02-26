@@ -156,3 +156,21 @@ tap.test('Links', t => {
  	t.same(s, j)
  	t.end()
  })
+
+ tap.test('toJSONTag', t => {
+ 	class Foo {
+ 		toJSONTag() {
+ 			let result = {
+ 				foo: 'bar'
+ 			}
+ 			JSONTag.setAttribute(result, 'class', 'foo')
+ 			return result
+ 		}
+ 	}
+ 	let foo = new Foo()
+ 	foo.baz = 'baz'
+ 	let s = JSONTag.stringify(foo)
+ 	let expect = '<object class="foo">{"foo":"bar"}'
+ 	t.same(s, expect)
+ 	t.end()
+ })

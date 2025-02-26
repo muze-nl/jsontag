@@ -105,8 +105,9 @@ export const stringify = (value, replacer=null, space="") => {
 			objectReferences.set(value, true)
 		}
 		if (typeof value.toJSONTag == 'function') {
-			return value.toJSONTag(objectReferences, replacer, space)
-		} else if (Array.isArray(value)) {
+			value = value.toJSONTag()
+		}
+		if (Array.isArray(value)) {
 			return getTypeString(value) + "["+encodeEntries(value)+"]"
 		} else if (value instanceof Object) {
 			switch (getType(value)) {
