@@ -192,3 +192,22 @@ tap.test('Links', t => {
  	t.same(s, expect)
  	t.end()
  })
+
+ tap.test('toJsontagLink', t => {
+ 	let l = new JSONTag.Link('/foo')
+ 	let s = JSONTag.stringify(l)
+ 	let expect = '<link>"/foo"'
+ 	t.same(s, expect)
+ 	t.end()
+ })
+
+ tap.test('toJsontagNull', t => {
+ 	let l = new JSONTag.Null()
+ 	JSONTag.setType(l, 'object')
+ 	JSONTag.setAttribute(l, 'class','foo')
+ 	let s = JSONTag.stringify(l)
+ 	let expect = '<object class="foo">null'
+ 	t.same(s, expect)
+ 	t.end()
+ })
+ 

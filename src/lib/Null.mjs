@@ -1,4 +1,4 @@
-import { getTypeString } from "./functions.mjs"
+import { getType, setType, getAttributes, setAttributes } from "./functions.mjs"
 
 class ExtendableProxy {
 	constructor()
@@ -8,7 +8,7 @@ class ExtendableProxy {
 				if (typeof target[name] !== 'undefined') {
 					return target[name]
 				}
-				if (name == 'then' || typeof name == 'symbol') {
+				if (name == 'then' || typeof name == 'symbol' || name == 'toJSONTag') {
 					return undefined
 				}
 				console.error('Attempting to get from Null', name, typeof name, JSON.stringify(name))
@@ -34,13 +34,7 @@ export default class Null extends ExtendableProxy {
 
 	toJSON()
 	{
-		return 'null'
-	}
-
-	toJSONTag()
-	{
-		let type = getTypeString(this)
-		return type+this.toJSON()
+		return null
 	}
 
 }

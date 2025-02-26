@@ -109,7 +109,19 @@ export const stringify = (value, replacer=null, space="") => {
 		} else if (typeof value.toJSON == 'function') {
 			let type = getType(value)
 			let attr = getAttributes(value)
-			value = value.toJSON()
+			let jsonValue = value.toJSON()
+			if (typeof jsonValue == 'string') {
+				value = new String(jsonValue) // convert to object so we can add type/attributes
+			} else if (typeof jsonValue == 'number') {
+				value = new Number(jsonValue) // convert to object so we can add type/attributes
+			} else if (jsonValue==null) { // null cannot have types/attributes, so do this by hand
+				if (value!==null) {
+					return getTypeString(value)+'null'
+				}
+				return 'null'
+			} else { // use the value from toJSON()
+				value = jsonValue
+			}
 			if (attr) {
 				setAttributes(value, attr)
 			}

@@ -1,4 +1,4 @@
-import { getAttributesString, setType } from "./functions.mjs"
+import { getAttributes, setAttributes, getType, setType } from "./functions.mjs"
 
 export default class Link {
 	#url;
@@ -35,13 +35,18 @@ export default class Link {
 
 	toJSON()
 	{
-		return '"'+this.#url+'"'
+		return this.#url
 	}
 
 	toJSONTag()
 	{
-		let attributes = getAttributesString(this)
-		return '<link'+(attributes ? ' ' + attributes : '')+'>'+this.toJSON()
+		let result = new String(this.#url)
+		let attributes = getAttributes(this)
+		if (attributes) {
+			setAttributes(result, attributes)
+		}
+		setType(result, 'link')
+		return result
 	}
 
 }
