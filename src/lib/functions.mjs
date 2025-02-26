@@ -106,6 +106,16 @@ export const stringify = (value, replacer=null, space="") => {
 		}
 		if (typeof value.toJSONTag == 'function') {
 			value = value.toJSONTag()
+		} else if (typeof value.toJSON == 'function') {
+			let type = getType(value)
+			let attr = getAttributes(value)
+			value = value.toJSON()
+			if (attr) {
+				setAttributes(value, attr)
+			}
+			if (type) {
+				setType(value, type)
+			}
 		}
 		if (Array.isArray(value)) {
 			return getTypeString(value) + "["+encodeEntries(value)+"]"
