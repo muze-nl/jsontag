@@ -1,4 +1,14 @@
+import Link from './Link.mjs'
 
+if (!Symbol['JSONTag:Type']) {
+	Symbol['JSONTag:Type'] = Symbol('@type')
+}
+if (!Symbol['JSONTag:Attributes']) {
+	Symbol['JSONTag:Attributes'] = Symbol('@attributes')
+}
+if (!Symbol['JSONTag:Null']) {
+	Symbol['JSONTag:Null'] = Symbol('@null')
+}
 // keep reference to original JSON.stringify, in case someone monkeypatches it
 const jsonStringify = JSON.stringify
 
@@ -70,18 +80,18 @@ export const stringify = (value, replacer=null, space="") => {
 			for (let v of value) {
 				createIds(v)
 			}
-		} else if (value && getType(value)=='object') {
-			if (checkCircular.has(value)) {
-				let id = getAttribute(value, 'id')
-				if (!id) {
-					createId(value)
+		} else if (value && typeof value == 'object') { //getType(value)=='object') {
+		 	if (checkCircular.has(value)) {
+		 	 	let id = getAttribute(value, 'id')
+		 		if (!id) {
+		 			createId(value)
+		 		}
+		 	} else {
+			 	checkCircular.set(value, true)
+				for (let k in value) {
+				    createIds(value[k])
 				}
-			} else {
-				checkCircular.set(value, true)
-				for (let v of Object.values(value)) {
-					createIds(v)
-				}
-			}
+		 	}
 		}
 	}
 
@@ -216,32 +226,26 @@ function createId(value) {
 
 
 export const isNull = (v) => {
-	let result = (v === null) || (typeof v.isNull !== 'undefined' && v.isNull)
-	return result
+	return (v === null) || v?.[Symbol['JSONTag:Null']]==true
 }
-
-if (!globalThis.JSONTagTypeInfo) {
-	globalThis.JSONTagTypeInfo = new WeakMap()
-}
-const typeInfo = globalThis.JSONTagTypeInfo
 
 export const getType = (obj) => {
-	if (typeInfo.has(obj)) {
-		let info = typeInfo.get(obj)
-		if (info.type) {
-			return info.type
-		}
+	let type = typeof obj
+	if (obj && type == 'object' 
+		&& (obj instanceof String || obj instanceof Number || isNull(obj))
+		&& (typeof obj[Symbol['JSONTag:Type']] != 'undefined') 
+	) {
+		type = obj[Symbol['JSONTag:Type']]
+	} else if (Array.isArray(obj)) {
+		type = 'array'
+	} else if (obj instanceof Number) {
+		type = 'number'
+	} else if (obj instanceof Boolean) {
+		type = 'boolean'
+	} else if (obj instanceof Link) {
+		type = 'link'
 	}
-	if (Array.isArray(obj)) {
-		return 'array'
-	}
-	if (obj instanceof Number) {
-		return 'number'
-	}
-	if (obj instanceof Boolean) {
-		return 'boolean'
-	}
-	return typeof obj
+	return type
 }
 
 export const types = [
@@ -257,22 +261,25 @@ export const setType = (obj, type) => {
 	if (typeof obj !== 'object') {
 		throw new TypeError('JSONTag can only add attributes to objects, convert literals to objects first')
 	}
-	let info = {}
-	if (typeInfo.has(obj)) {
-		info = typeInfo.get(obj)
-	}
 	if (!types.includes(type)) {
 		throw new TypeError('unknown type '+type)
 	}
-	info.type = type
-	if (typeof info.attributes === 'undefined') {
-		info.attributes = {}
+	if (Array.isArray(obj)) {
+		if (type !== 'array') {
+			throw new TypeError('JSONTag can only set type "array" on an array')
+		}
+		return
+	} else if (obj instanceof String || obj instanceof Number || isNull(obj)) {
+		obj[Symbol['JSONTag:Type']] = type
+	} else if (type == 'link' && obj instanceof Link) {
+		// do nothing
+	} else if (type !== 'object') {
+		throw new TypeError('JSONTag can only set type "object" on an object')
 	}
-	typeInfo.set(obj, info)
 }
 
 export const setAttribute = (obj, attr, value) => {
-	if (typeof obj !== 'object') {
+	if (!obj || typeof obj !== 'object') {
 		throw new TypeError('JSONTag can only add attributes to objects, convert literals to objects first')
 	}
 	if (Array.isArray(value)) {
@@ -287,9 +294,9 @@ export const setAttribute = (obj, attr, value) => {
 	if (value.indexOf(' ')!==-1) {
 		value = value.split(" ")
 	}
-	let info = typeInfo.get(obj) || { attributes: {}}
-	info.attributes[attr] = value
-	typeInfo.set(obj, info)
+	const attributes = obj[Symbol['JSONTag:Attributes']] ?? {}
+	attributes[attr] = value
+	obj[Symbol['JSONTag:Attributes']] = attributes
 }
 
 export const setAttributes = (obj, attributes) => {
@@ -305,8 +312,8 @@ export const setAttributes = (obj, attributes) => {
 }
 
 export const getAttribute = (obj, attr) => {
-	let info = typeInfo.get(obj) || { attributes: {}}
-	return info.attributes[attr]
+	const attributes = obj[Symbol['JSONTag:Attributes']] ?? {}
+	return attributes[attr]
 }
 
 export const addAttribute = (obj, attr, value) => {
@@ -316,34 +323,33 @@ export const addAttribute = (obj, attr, value) => {
 	if (value.indexOf('"')!==-1) {
 		throw new TypeError('attribute values must not contain " characters')
 	}	
-	let info = typeInfo.get(obj) || { attributes: {}}
-	if (typeof info.attributes[attr] === 'undefined') {
+	const attributes = obj[Symbol['JSONTag:Attributes']] ?? {}
+	if (typeof attributes[attr] === 'undefined') {
 		setAttribute(obj, attr, value)
 	} else {
-		if (!Array.isArray(info.attributes[attr])) {
-			info.attributes[attr] = [ info.attributes[attr] ]
+		if (!Array.isArray(attributes[attr])) {
+			attributes[attr] = [ attributes[attr] ]
 		}
 		if (value.indexOf(' ')!==-1) {
 			value = value.split(" ")
 		} else {
 			value = [ value ]
 		}
-		info.attributes[attr] = info.attributes[attr].concat(value)
-		typeInfo.set(obj, info)
+		attributes[attr] = attributes[attr].concat(value)
+		obj[Symbol['JSONTag:Attributes']] = attributes
 	}
 }
 
 export const removeAttribute = (obj, attr) => {
-	let info = typeInfo.get(obj) || { attributes: {}}
-	if ( typeof info.attributes[attr] !== 'undefined') {
-		delete info.attributes[attr]
-		typeInfo.set(obj, info)
+	const attributes = obj[Symbol['JSONTag:Attributes']]
+	if ( typeof attributes?.[attr] !== 'undefined') {
+		delete attributes[attr]
 	}
 }
 
 export const getAttributes = (obj) => {
-	let info = typeInfo.get(obj) || { attributes: {}}
-	return Object.assign({},info.attributes)
+	const attributes = obj[Symbol['JSONTag:Attributes']] ?? {}
+	return Object.assign({},attributes)
 }
 
 export const getAttributesString = (obj) => {

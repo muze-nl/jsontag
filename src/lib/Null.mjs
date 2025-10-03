@@ -1,4 +1,7 @@
 import { getType, setType, getAttributes, setAttributes } from "./functions.mjs"
+if (!Symbol['JSONTag:Null']) {
+	Symbol['JSONTag:Null'] = Symbol('@null')
+}
 
 class ExtendableProxy {
 	constructor()
@@ -15,8 +18,13 @@ class ExtendableProxy {
 				throw new Error('Attempting to get '+name+' from Null')
 			},
 			set: (target,name,newValue) => {
-				console.error('Attempting to set '+name+' in Null to',newValue)
-				throw new Error('Attempting to set '+name+' in Null')	
+				if (typeof name == 'symbol') {
+					target[name] = newValue
+					return true
+				} else {
+					console.error('Attempting to set '+name+' in Null to',newValue)
+					throw new Error('Attempting to set '+name+' in Null')	
+				}
 			}
 		})
 	}
@@ -25,7 +33,9 @@ class ExtendableProxy {
 
 export default class Null extends ExtendableProxy {
 
-	isNull = true;
+	get [Symbol['JSONTag:Null']]() {
+		return true
+	}
 
 	toString()
 	{
