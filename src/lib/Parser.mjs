@@ -27,19 +27,21 @@ const regexes = {
     range: /^\[-?(\d+\.)?\d+\,-?(\d+\.)?\d+\]$/
 }
 
-export class Parser
+export default class Parser
 {
 	at
 	ch
+	input
 	context
+	meta
 
 	constructor(baseURL = 'http://localhost/')
 	{
 		this.meta = {
 			index: {
-				id: new Map(),
-				unresolved: new Map()
+				id: new Map()
 			},
+			unresolved: new Map(),
 			baseURL
 		}
 	}
@@ -272,7 +274,7 @@ export class Parser
                 this.typeError(tagName, value)
                 break
             case "uuid":
-                return this.isUuid(value)
+                return this.isType('uuid',value)
             case "decimal":
                 return this.isType('decimal',value)
             case "money":
@@ -455,11 +457,30 @@ export class Parser
                 this.meta.unresolved.set(link,[])
                 links = this.meta.unresolved.get(link)
             }
+            links = links.filter(l => l.key==key && l.src.deref()==object)
             links.push({
                 src: new WeakRef(object),
                 key: key
             })
+            this.meta.unresolved.set(link, links)
         }
+    }
+
+    removeUnresolved(item, object, key)
+    {
+        if (JSONTag.getType(item)==='link') {
+            let link = ''+item
+            let links = this.meta.unresolved.get(link)
+            if (typeof links === 'undefined') {
+                return
+            }
+            links = links.filter(l => l.key!=key || l.src.deref()!=object)
+            if (links.length) {
+                this.meta.unresolved.set(link, links)
+            } else {
+                this.meta.unresolved.delete(link)
+            }
+        }            
     }
 
     array()
@@ -601,12 +622,14 @@ export class Parser
 		) {
 			for (k in value) {
 				if (Object.prototype.hasOwnProperty.call(value, k)) {
-					v = this.walk(value, k);
+					v = this.walk(value, k, reviver);
 					if (v !== undefined 
 						&& ( typeof value[k] === 'undefined' || value[k]!==v) )
 					{
+                        let oldV = value[k]
 						value[k] = v;
 						if (JSONTag.getType(v)==='link') {
+                            this.removeUnresolved(oldV, value, k)
 							this.checkUnresolved(v, value, k)
 						}
 					} else if (v === undefined) {
@@ -615,7 +638,7 @@ export class Parser
 				}
 			}
 		}
-		return reviver.call(holder, key, value, this.meta);
+        return reviver.call(holder, key, value, this.meta);
 	}
 
 	replaceLink(u,value)
@@ -660,6 +683,7 @@ export class Parser
     {
 		this.at = 0
 	    this.ch = " "
+	    this.input = input
 	    const result = this.value()
 	    this.whitespace()
 	    if (this.ch) {
