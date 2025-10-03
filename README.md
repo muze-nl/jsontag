@@ -57,6 +57,25 @@ npx parcel build
 
 ## API Reference
 
+### Parser
+
+> `const parser = new JSONTag.Parser(baseURL)`
+
+Introduced in jsontag 0.10, the Parser class now implements the parser, and can be extended. To parse jsontag strings, use:
+
+```javascript
+const parser = new JSONTag.Parser('https://example.com/')
+const data = parser.parse(jsontagStr)
+```
+
+As long as you use the same Parser instance, you can resolve links between different input strings, and an id index is kept inside the Parser:
+
+```javascript
+const foo = parser.meta.index.id.get('foo').deref()
+```
+
+The `JSONTag.parse` method is kept for backwards compatibility.
+
 ### parse
 
 > `JSONTag.parse(stringValue, reviver, meta)`
