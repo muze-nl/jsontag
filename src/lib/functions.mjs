@@ -259,7 +259,7 @@ export const types = [
 
 export const setType = (obj, type) => {
 	if (typeof obj !== 'object') {
-		throw new TypeError('JSONTag can only add attributes to objects, convert literals to objects first')
+		throw new TypeError('JSONTag can only set type of objects, convert literals to objects first')
 	}
 	if (!types.includes(type)) {
 		throw new TypeError('unknown type '+type)
@@ -300,7 +300,7 @@ export const setAttribute = (obj, attr, value) => {
 }
 
 export const setAttributes = (obj, attributes) => {
-	if (typeof obj !== 'object') {
+	if (!obj || typeof obj !== 'object') {
 		throw new TypeError('JSONTag can only add attributes to objects, convert literals to objects first')
 	}
 	if (typeof attributes !== 'object') {
@@ -312,6 +312,9 @@ export const setAttributes = (obj, attributes) => {
 }
 
 export const getAttribute = (obj, attr) => {
+	if (!obj || typeof obj != 'object') {
+		return undefined
+	}
 	const attributes = obj[Symbol['JSONTag:Attributes']] ?? {}
 	return attributes[attr]
 }
@@ -323,6 +326,9 @@ export const addAttribute = (obj, attr, value) => {
 	if (value.indexOf('"')!==-1) {
 		throw new TypeError('attribute values must not contain " characters')
 	}	
+	if (!obj || typeof obj != 'object') {
+		throw new TypeError('JSONTag can only add attributes to objects, convert literals to objects first')
+	}
 	const attributes = obj[Symbol['JSONTag:Attributes']] ?? {}
 	if (typeof attributes[attr] === 'undefined') {
 		setAttribute(obj, attr, value)
@@ -341,6 +347,9 @@ export const addAttribute = (obj, attr, value) => {
 }
 
 export const removeAttribute = (obj, attr) => {
+	if (!obj || typeof obj != 'object') {
+		return
+	}
 	const attributes = obj[Symbol['JSONTag:Attributes']]
 	if ( typeof attributes?.[attr] !== 'undefined') {
 		delete attributes[attr]
@@ -348,6 +357,9 @@ export const removeAttribute = (obj, attr) => {
 }
 
 export const getAttributes = (obj) => {
+	if (!obj || typeof obj != 'object') {
+		return {}
+	}
 	const attributes = obj[Symbol['JSONTag:Attributes']] ?? {}
 	return Object.assign({},attributes)
 }

@@ -2,30 +2,6 @@
 import * as JSONTag from './functions.mjs'
 import Null from './Null.mjs'
 
-const escapee = {
-	'"': '"',
-	"\\":"\\",
-	'/': '/',
-	b: "\b",
-	f: "\f",
-	n: "\n",
-	r: "\r",
-	t: "\t"
-}
-
-const regexes = {
-    color: /^(rgb|hsl)a?\((\d+%?(deg|rad|grad|turn)?[,\s]+){2,3}[\s\/]*[\d\.]+%?\)$/i,
-    email: /^[A-Za-z0-9_!#$%&'*+\/=?`{|}~^.-]+@[A-Za-z0-9.-]+$/,
-    uuid:  /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/,
-    decimal: /^\d*\.?\d*$/,
-    money: /^[A-Z]+\$\d*\.?\d*$/,
-    duration: /^(-?)P(?=\d|T\d)(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)([DW]))?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/,
-    phone: /^[+]?(?:\(\d+(?:\.\d+)?\)|\d+(?:\.\d+)?)(?:[ -]?(?:\(\d+(?:\.\d+)?\)|\d+(?:\.\d+)?))*(?:[ ]?(?:x|ext)\.?[ ]?\d{1,5})?$/,
-    time: /^(\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?$/,
-    date: /^-?[1-9][0-9]{3,}-([0][1-9]|[1][0-2])-([1-2][0-9]|[0][1-9]|[3][0-1])$/,
-    datetime: /^(\d{4,})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?Z?$/,
-    range: /^\[-?(\d+\.)?\d+\,-?(\d+\.)?\d+\]$/
-}
 
 export default class Parser
 {
@@ -34,6 +10,31 @@ export default class Parser
 	input
 	context
 	meta
+
+    escapee = {
+        '"': '"',
+        "\\":"\\",
+        '/': '/',
+        b: "\b",
+        f: "\f",
+        n: "\n",
+        r: "\r",
+        t: "\t"
+    }
+
+    regexes = {
+        color: /^(rgb|hsl)a?\((\d+%?(deg|rad|grad|turn)?[,\s]+){2,3}[\s\/]*[\d\.]+%?\)$/i,
+        email: /^[A-Za-z0-9_!#$%&'*+\/=?`{|}~^.-]+@[A-Za-z0-9.-]+$/,
+        uuid:  /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/,
+        decimal: /^\d*\.?\d*$/,
+        money: /^[A-Z]+\$\d*\.?\d*$/,
+        duration: /^(-?)P(?=\d|T\d)(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)([DW]))?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/,
+        phone: /^[+]?(?:\(\d+(?:\.\d+)?\)|\d+(?:\.\d+)?)(?:[ -]?(?:\(\d+(?:\.\d+)?\)|\d+(?:\.\d+)?))*(?:[ ]?(?:x|ext)\.?[ ]?\d{1,5})?$/,
+        time: /^(\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?$/,
+        date: /^-?[1-9][0-9]{3,}-([0][1-9]|[1][0-2])-([1-2][0-9]|[0][1-9]|[3][0-1])$/,
+        datetime: /^(\d{4,})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?Z?$/,
+        range: /^\[-?(\d+\.)?\d+\,-?(\d+\.)?\d+\]$/
+    }
 
 	constructor(baseURL = 'http://localhost/')
 	{
@@ -222,7 +223,7 @@ export default class Parser
                 this.typeError('color', color)
             }
         } else {
-            result = regexes.color.test(color)
+            result = this.regexes.color.test(color)
         }
         if (!result) {
             this.typeError('color',color)
@@ -233,7 +234,7 @@ export default class Parser
 
     isType(type, value)
     {
-        let result = regexes[type].test(value)
+        let result = this.regexes[type].test(value)
         if (!result) {
             this.typeError(type, value)
         }
@@ -334,8 +335,8 @@ export default class Parser
                     }
                     value += String.fromCharCode(uffff)
                     this.next()
-                } else if (typeof escapee[this.ch] === 'string') {
-                    value += escapee[this.ch]
+                } else if (typeof this.escapee[this.ch] === 'string') {
+                    value += this.escapee[this.ch]
                     this.next()
                 } else {
                     break
