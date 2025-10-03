@@ -457,7 +457,7 @@ export default class Parser
                 this.meta.unresolved.set(link,[])
                 links = this.meta.unresolved.get(link)
             }
-            links = links.filter(l => l.key==key && l.src.deref()==object)
+            links = links.filter(l => l.key!=key || l.src.deref()!=object)
             links.push({
                 src: new WeakRef(object),
                 key: key
