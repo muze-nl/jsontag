@@ -1,11 +1,18 @@
 import Null from './lib/Null.mjs'
 import Link from './lib/Link.mjs'
 import * as attr from './lib/functions.mjs'
-import parse from './lib/fast-parse.mjs'
+import Parser from './lib/Parser.mjs'
 
 window.JSONTag = {
 	stringify: attr.stringify,
-	parse,
+	parse: (input, reviver, meta) => {
+		const P = new Parser()
+		if (meta) {
+			P.meta = meta
+		}
+		return P.parse(input, reviver)
+	},
+	Parser,
 
 	getType: attr.getType,
 	setType: attr.setType,

@@ -2,14 +2,21 @@ import Link from './lib/Link.mjs'
 import Null from './lib/Null.mjs'
 
 import * as attr from './lib/functions.mjs'
-import parse from './lib/fast-parse.mjs'
+import Parser from './lib/Parser.mjs'
 
 export default class JSONTag 
 {
 
 	static {
 		JSONTag.stringify   = attr.stringify
-		JSONTag.parse       = parse
+		JSONTag.parse       = (input, reviver, meta) => {
+			const P = new Parser()
+			if (meta) {
+				P.meta = meta
+			}
+			return P.parse(input, reviver)
+		}
+		JSONTag.Parser      = Parser
 
 		JSONTag.getType       = attr.getType
 		JSONTag.setType       = attr.setType
