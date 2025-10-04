@@ -12,7 +12,7 @@ export default class JSONTag
 		JSONTag.parse       = (input, reviver, meta) => {
 			const P = new Parser()
 			if (meta) {
-				P.meta = meta
+				Object.assign(P.meta, meta)
 			}
 			return P.parse(input, reviver)
 		}
