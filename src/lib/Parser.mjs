@@ -5,11 +5,11 @@ import Null from './Null.mjs'
 
 export default class Parser
 {
-	at
-	ch
-	input
-	context
-	meta
+    at
+    ch
+    input
+    context
+    meta
 
     escapee = {
         '"': '"',
@@ -36,34 +36,34 @@ export default class Parser
         range: /^\[-?(\d+\.)?\d+\,-?(\d+\.)?\d+\]$/
     }
 
-	constructor(baseURL = 'http://localhost/')
-	{
-		this.meta = {
-			index: {
-				id: new Map()
-			},
-			unresolved: new Map(),
-			baseURL
-		}
-	}
+    constructor(baseURL = 'http://localhost/')
+    {
+        this.meta = {
+            index: {
+                id: new Map()
+            },
+            unresolved: new Map(),
+            baseURL
+        }
+    }
 
-	error(message)
-	{
-		throw new SyntaxError(message, this)
-	}
+    error(message)
+    {
+        throw new SyntaxError(message, this)
+    }
 
-	next(c)
-	{
-		if (c && c!==this.ch) {
+    next(c)
+    {
+        if (c && c!==this.ch) {
             this.error("Expected '"+c+"' instead of '"+this.ch+"'")
         }
         this.ch = this.input.charAt(this.at)
         this.at+=1
         return this.ch
-	}
-	
-	number(tagName)
-	{
+    }
+    
+    number(tagName)
+    {
         let numString = ''
         if (this.ch==='-') {
             numString = '-'
@@ -142,17 +142,17 @@ export default class Parser
                     break
             }
         }
-        return result		
-	}
+        return result        
+    }
 
-	typeError(type, value)
-	{
-		this.error('Syntax error, expected '+type+', got: '+value)	
-	}
+    typeError(type, value)
+    {
+        this.error('Syntax error, expected '+type+', got: '+value)    
+    }
 
-	isFloat(float, range)
-	{
-		let test = new Number(parseFloat(float))
+    isFloat(float, range)
+    {
+        let test = new Number(parseFloat(float))
         let str = test.toString()
         if (float!==str) {
             this.error('Syntax Error: expected float value')
@@ -169,10 +169,10 @@ export default class Parser
                 }
             }
         }
-	}
+    }
 
-	isBigInt(int, range)
-	{
+    isBigInt(int, range)
+    {
         let test = BigInt(int)
         let str = test.toString()
         if (int!==str) {
@@ -190,9 +190,9 @@ export default class Parser
                 }
             }
         }
-	}
+    }
 
-	isInt(int, range)
+    isInt(int, range)
     {
         let test = new Number(parseInt(int))
         let str = test.toString()
@@ -238,7 +238,7 @@ export default class Parser
         if (!result) {
             this.typeError(type, value)
         }
-        return true    	
+        return true        
     }
 
     isUrl(url)
@@ -411,9 +411,9 @@ export default class Parser
             this.error('Syntax Error: expected word')
         }
         while((this.ch>='a' && this.ch<='z') 
-        	|| (this.ch>='A' && this.ch<='Z') 
-        	|| (this.ch>='0' && this.ch<='9') 
-        	|| this.ch=='_'
+            || (this.ch>='A' && this.ch<='Z') 
+            || (this.ch>='0' && this.ch<='9') 
+            || this.ch=='_'
         ) {
             val += this.ch
             this.next()
@@ -610,39 +610,39 @@ export default class Parser
         return result
     }
 
-	walk(holder, key, reviver)
-	{
-		var k;
-		var v;
-		var value = holder[key];
-		if (value !== null 
-			&& typeof value === "object" 
-			&& !(value instanceof String 
-			|| value instanceof Number
-			|| value instanceof Boolean)
-		) {
-			for (k in value) {
-				if (Object.prototype.hasOwnProperty.call(value, k)) {
-					v = this.walk(value, k, reviver);
-					if (v !== undefined 
-						&& ( typeof value[k] === 'undefined' || value[k]!==v) )
-					{
+    walk(holder, key, reviver)
+    {
+        var k;
+        var v;
+        var value = holder[key];
+        if (value !== null 
+            && typeof value === "object" 
+            && !(value instanceof String 
+            || value instanceof Number
+            || value instanceof Boolean)
+        ) {
+            for (k in value) {
+                if (Object.prototype.hasOwnProperty.call(value, k)) {
+                    v = this.walk(value, k, reviver);
+                    if (v !== undefined 
+                        && ( typeof value[k] === 'undefined' || value[k]!==v) )
+                    {
                         let oldV = value[k]
-						value[k] = v;
-						if (JSONTag.getType(v)==='link') {
+                        value[k] = v;
+                        if (JSONTag.getType(v)==='link') {
                             this.removeUnresolved(oldV, value, k)
-							this.checkUnresolved(v, value, k)
-						}
-					} else if (v === undefined) {
-						delete value[k];
-					}
-				}
-			}
-		}
+                            this.checkUnresolved(v, value, k)
+                        }
+                    } else if (v === undefined) {
+                        delete value[k];
+                    }
+                }
+            }
+        }
         return reviver.call(holder, key, value, this.meta);
-	}
+    }
 
-	replaceLink(u,value)
+    replaceLink(u,value)
     {
         if (typeof value !== 'undefined') {
             let src = u.src.deref()
@@ -655,55 +655,55 @@ export default class Parser
 
     resolveLinks()
     {
-		if (this.meta.index.id.size>this.meta.unresolved.size) {
-	        this.meta.unresolved.forEach((links,id) => {
-	            let value = this.meta.index.id.get(id)?.deref()
-	            if (value!==undefined) {
-	                links.forEach((u,i) => {
-	                    if (this.replaceLink(u,value)) {
-	                        delete links[i]
-	                    }
-	                })
-	            }
-	        })
-	    } else {
-	        this.meta.index.id.forEach((ref,id) => {
-	            let value = ref.deref()
-	            let links = this.meta.unresolved.get(id)
-	            if (value!==undefined && typeof links !== 'undefined') {
-	                links.forEach((u) => {
-	                    this.replaceLink(u,value)
-	                })
-	                this.meta.unresolved.delete(id)
-	            }
-	        })
-	    }
+        if (this.meta.index.id.size>this.meta.unresolved.size) {
+            this.meta.unresolved.forEach((links,id) => {
+                let value = this.meta.index.id.get(id)?.deref()
+                if (value!==undefined) {
+                    links.forEach((u,i) => {
+                        if (this.replaceLink(u,value)) {
+                            delete links[i]
+                        }
+                    })
+                }
+            })
+        } else {
+            this.meta.index.id.forEach((ref,id) => {
+                let value = ref.deref()
+                let links = this.meta.unresolved.get(id)
+                if (value!==undefined && typeof links !== 'undefined') {
+                    links.forEach((u) => {
+                        this.replaceLink(u,value)
+                    })
+                    this.meta.unresolved.delete(id)
+                }
+            })
+        }
     }
 
     parse(input, reviver)
     {
-		this.at = 0
-	    this.ch = " "
-	    this.input = input
-	    const result = this.value()
-	    this.whitespace()
-	    if (this.ch) {
-	        this.error("Syntax error")
-	    }
-	    if (typeof reviver == 'function') {
-	    	this.walk({"":result}, "", reviver)
-	    }
-	    this.resolveLinks()
-	    return result
-	}
+        this.at = 0
+        this.ch = " "
+        this.input = input
+        const result = this.value()
+        this.whitespace()
+        if (this.ch) {
+            this.error("Syntax error")
+        }
+        if (typeof reviver == 'function') {
+            this.walk({"":result}, "", reviver)
+        }
+        this.resolveLinks()
+        return result
+    }
 }
 
 export class SyntaxError extends Error
 {
-	constructor(message, parser)
-	{
-		super(message)
-		this.input = parser.input.substring(parser.at-100,parser.at+100)
-		this.at = parser.at
-	}
+    constructor(message, parser)
+    {
+        super(message)
+        this.input = parser.input.substring(parser.at-100,parser.at+100)
+        this.at = parser.at
+    }
 }
