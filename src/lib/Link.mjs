@@ -1,14 +1,17 @@
 import { getAttributes, setAttributes, getType, setType } from "./functions.mjs"
 
 export default class Link {
-	#url;
 
 	constructor(url)
 	{
 		if (typeof url !== 'string') {
 			throw new Error('not a url:',url)
 		}
-		this.#url = ''+url
+		Object.defineProperty(this, 'url', {
+			configurable: false,
+			writable: false,
+			value: ''+url
+		})
 		setType(this, 'link')
 	}
 
@@ -23,24 +26,19 @@ export default class Link {
 		return new Link(url)
 	}
 
-	get value()
-	{
-		return this.#url
-	}
-
 	toString()
 	{
-		return this.#url
+		return this.url
 	}
 
 	toJSON()
 	{
-		return this.#url
+		return this.url
 	}
 
 	toJSONTag()
 	{
-		let result = new String(this.#url)
+		let result = new String(this.url)
 		let attributes = getAttributes(this)
 		if (attributes) {
 			setAttributes(result, attributes)
