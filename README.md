@@ -434,7 +434,7 @@ The `<link>` value is explicitly designed to support Linked Data later on.
 
 Since the point of JSONTag is to create a data interchange format, not primarily a human readable format, I've opted to force all date related types to use universal time (GMT). Adding timezones creates the possibility of confusion and errors. Each client parsing the JSONTag data should apply timezones if needed.
 
-I've used the simplified ISO 8601 format as described in RFC 3339, since it allows for easy sorting and is already a widely used internet standard.
+I've used the simplified ISO 8601 format as described in RFC 3339, since it allows for easy sorting and is already a widely used internet standard. In addition I've also allowed a human readable version of this format, without the T and Z markers. You can also skip the seconds part in the time, so instead of `<datetime>"2001-01-01T12:00:00Z"` this is also accepted: `<datetime>"2001-01-01 12:00"`.
 
 ### Decimal and Money
 
