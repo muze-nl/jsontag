@@ -133,6 +133,8 @@ tap.test('Types', t => {
 		"date": <date>"1972-09-20",
 		"datetime": <datetime>"1972-09-20 12:30:45",
 		"datetime2": <datetime>"1972-09-20T12:30:45.10Z",
+		"datetime3": <datetime>"1972-09-20t12:30:45.10z",
+		"datetime3": <datetime>"1972-09-20 12:30",
 		"decimal": <decimal>"1.0000001",
 		"money": <money>"EUR$123.99",
 		"link": <link>"https://www.muze.nl/",
