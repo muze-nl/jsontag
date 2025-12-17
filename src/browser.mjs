@@ -3,7 +3,7 @@ import Link from './lib/Link.mjs'
 import * as attr from './lib/functions.mjs'
 import Parser from './lib/Parser.mjs'
 
-window.JSONTag = {
+globalThis.JSONTag = {
     stringify: attr.stringify,
     parse: (input, reviver, meta) => {
         const P = new Parser()
@@ -32,3 +32,5 @@ window.JSONTag = {
     Link,
     Null
 }
+
+export default globalThis.JSONTag
