@@ -328,7 +328,7 @@ export default class Parser
                     uffff=0
                     for (i=0; i<4; i++) {
                         hex = parseInt(this.next(), 16)
-                        if (!this.isFinite(hex)) {
+                        if (!isFinite(hex)) {
                             break
                         }
                         uffff = uffff * 16 + hex

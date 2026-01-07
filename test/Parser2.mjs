@@ -264,3 +264,10 @@ tap.test('unicode', t => {
 	t.equal(o.foo, '𠮷a')
 	t.end()
 })
+
+tap.test('encoded unicode', t => {
+	let jsont = `{"foo":"\\u20aca"}`
+	let o = parser.parse(jsont)
+	t.equal(o.foo, '€a')
+	t.end()	
+})
