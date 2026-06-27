@@ -26,6 +26,7 @@ export default class Parser
         color: /^(rgb|hsl)a?\((\d+%?(deg|rad|grad|turn)?[,\s]+){2,3}[\s\/]*[\d\.]+%?\)$/i,
         email: /^[A-Za-z0-9_!#$%&'*+\/=?`{|}~^.-]+@[A-Za-z0-9.-]+$/,
         uuid:  /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/,
+        float: /^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$/,
         decimal: /^\d*\.?\d*$/,
         money: /^[A-Z]+\$\d*\.?\d*$/,
         duration: /^(-?)P(?=\d|T\d)(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)([DW]))?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/,
@@ -152,9 +153,11 @@ export default class Parser
 
     isFloat(float, range)
     {
-        let test = new Number(parseFloat(float))
-        let str = test.toString()
-        if (float!==str) {
+        if (!this.regexes.float.test(float)) {
+            this.error('Syntax Error: expected float value')
+        }
+        let test = new Number(float)
+        if (!Number.isFinite(test.valueOf())) {
             this.error('Syntax Error: expected float value')
         }
         if (range) {

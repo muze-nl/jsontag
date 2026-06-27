@@ -156,6 +156,7 @@ export const stringify = (value, replacer=null, space="") => {
                 case 'phone':
                 case 'url':
                 case 'uuid':
+                case 'range':
                 case 'date':
                 case 'time':
                 case 'datetime':
@@ -251,7 +252,7 @@ export const getType = (obj) => {
 export const types = [
     'object','array','string','number','boolean',                // JSON
     'decimal','money','uuid','url','link','date','time','datetime', 'duration', 'timestamp',
-    'text', 'blob', 'color', 'email', 'hash', 'phone',
+    'text', 'blob', 'color', 'email', 'hash', 'phone', 'range',
     'int', 'int8', 'int16', 'int32', 'int64',
     'uint', 'uint8', 'uint16', 'uint32', 'uint64',
     'float', 'float32', 'float64'

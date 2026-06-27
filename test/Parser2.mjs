@@ -271,3 +271,151 @@ tap.test('encoded unicode', t => {
 	t.equal(o.foo, '€a')
 	t.end()	
 })
+
+tap.test('number formats and numeric types', t => {
+	let result = JSONTag.parse(`{
+		"exponent": 1e3,
+		"signedExponent": -1.5E-2,
+		"number": <number>1e3,
+		"float": <float>1e3,
+		"float32": <float32>-1.5E-2,
+		"float64": <float64>1.5e+2,
+		"int64": <int64>-9223372036854775808,
+		"uint64": <uint64>18446744073709551615
+	}`)
+
+	t.equal(result.exponent, 1000)
+	t.equal(result.signedExponent, -0.015)
+	t.equal(result.number.valueOf(), 1000)
+	t.equal(JSONTag.getType(result.number), 'number')
+	t.equal(result.float.valueOf(), 1000)
+	t.equal(JSONTag.getType(result.float), 'float')
+	t.equal(result.float32.valueOf(), -0.015)
+	t.equal(JSONTag.getType(result.float32), 'float32')
+	t.equal(result.float64.valueOf(), 150)
+	t.equal(JSONTag.getType(result.float64), 'float64')
+	t.equal(JSONTag.getType(result.int64), 'int64')
+	t.equal(JSONTag.getType(result.uint64), 'uint64')
+	t.end()
+})
+
+tap.test('string escapes', t => {
+	let result = JSONTag.parse(`{
+		"quote": "\\"",
+		"slash": "\\\\",
+		"solidus": "\\/",
+		"backspace": "\\b",
+		"formfeed": "\\f",
+		"newline": "\\n",
+		"return": "\\r",
+		"tab": "\\t"
+	}`)
+
+	t.equal(result.quote, '"')
+	t.equal(result.slash, '\\')
+	t.equal(result.solidus, '/')
+	t.equal(result.backspace, '\b')
+	t.equal(result.formfeed, '\f')
+	t.equal(result.newline, '\n')
+	t.equal(result.return, '\r')
+	t.equal(result.tab, '\t')
+	t.end()
+})
+
+tap.test('empty containers and string backed types', t => {
+	let result = JSONTag.parse(`{
+		"object": {},
+		"array": [],
+		"range": <range>"[-1.5,2]",
+		"relativeUrl": <url>"/profiles/john"
+	}`, null, {
+		baseURL: 'https://example.org/'
+	})
+
+	t.same(result.object, {})
+	t.same(result.array, [])
+	t.equal(result.range.valueOf(), '[-1.5,2]')
+	t.equal(JSONTag.getType(result.range), 'range')
+	t.equal(JSONTag.stringify(result.range), '<range>"[-1.5,2]"')
+	t.equal(JSONTag.getType(result.relativeUrl), 'url')
+	t.end()
+})
+
+tap.test('reviver can remove properties', t => {
+	let result = JSONTag.parse(`{
+		"keep": "value",
+		"remove": "value",
+		"nested": {
+			"remove": "value"
+		}
+	}`, (key, value) => {
+		if (key === 'remove') {
+			return undefined
+		}
+		return value
+	})
+
+	t.same(result, {
+		keep: 'value',
+		nested: {}
+	})
+	t.end()
+})
+
+tap.test('link resolution with more indexed objects than links', t => {
+	let result = JSONTag.parse(`{
+		"one": <object id="one">{"name":"One"},
+		"two": <object id="two">{"name":"Two"},
+		"three": <object id="three">{"name":"Three"},
+		"selected": <link>"two"
+	}`)
+
+	t.equal(result.selected, result.two)
+	t.end()
+})
+
+tap.test('invalid numbers and ranges', t => {
+	let syntaxErrors = [
+		`<int>1.2`,
+		`<uint>-1`,
+		`<int8>-129`,
+		`<uint8>256`,
+		`<int64>-9223372036854775809`,
+		`<uint64>18446744073709551616`,
+		`<float32>3.5e+38`,
+		`<float32>-3.5e+38`
+	]
+
+	syntaxErrors.forEach(line => {
+		t.throws(() => JSONTag.parse(line), line)
+	})
+	t.end()
+})
+
+tap.test('invalid strings and urls', t => {
+	let syntaxErrors = [
+		`"unterminated`,
+		`"invalid\\xescape"`,
+		`<url>"http://["`,
+		`<range>"1,2"`
+	]
+
+	syntaxErrors.forEach(line => {
+		t.throws(() => JSONTag.parse(line), line)
+	})
+	t.end()
+})
+
+tap.test('incomplete or trailing input', t => {
+	let syntaxErrors = [
+		`[1,`,
+		`{"a":`,
+		`<object class="Person"`,
+		`true false`
+	]
+
+	syntaxErrors.forEach(line => {
+		t.throws(() => JSONTag.parse(line), line)
+	})
+	t.end()
+})
