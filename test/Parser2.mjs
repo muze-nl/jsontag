@@ -299,6 +299,22 @@ tap.test('number formats and numeric types', t => {
 	t.end()
 })
 
+tap.test('tagged numbers use strict JSON number syntax', t => {
+	let syntaxErrors = [
+		`<number>01`,
+		`<number>1.`,
+		`<number>-.1`,
+		`<number>-`,
+		`<number>1e`,
+		`<number>1e+`
+	]
+
+	syntaxErrors.forEach(line => {
+		t.throws(() => JSONTag.parse(line), 'rejects '+line)
+	})
+	t.end()
+})
+
 tap.test('string escapes', t => {
 	let result = JSONTag.parse(`{
 		"quote": "\\"",
@@ -319,6 +335,14 @@ tap.test('string escapes', t => {
 	t.equal(result.newline, '\n')
 	t.equal(result.return, '\r')
 	t.equal(result.tab, '\t')
+	t.end()
+})
+
+tap.test('tagged string escapes', t => {
+	let result = JSONTag.parse(`<string>"plain text with \\n newline and \\u20ac"`)
+
+	t.equal(result.valueOf(), 'plain text with \n newline and €')
+	t.equal(JSONTag.getType(result), 'string')
 	t.end()
 })
 
@@ -426,6 +450,9 @@ tap.test('invalid strings and urls', t => {
 	let syntaxErrors = [
 		`"unterminated`,
 		`"invalid\\xescape"`,
+		`<string>"bad\\uZZZZ"`,
+		`<string>"bad
+control"`,
 		`<url>"http://["`,
 		`<range>"1,2"`
 	]

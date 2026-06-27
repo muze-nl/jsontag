@@ -2,6 +2,21 @@
 import * as JSONTag from './functions.mjs'
 import Null from './Null.mjs'
 
+const STRING_SPECIAL = /["\\\u0000-\u001f]/g
+
+function hexValue(code)
+{
+    if (code>=48 && code<=57) {
+        return code-48
+    }
+    if (code>=65 && code<=70) {
+        return code-55
+    }
+    if (code>=97 && code<=102) {
+        return code-87
+    }
+    return -1
+}
 
 export default class Parser
 {
@@ -181,54 +196,72 @@ export default class Parser
     
     number(tagName)
     {
-        let numString = ''
-        if (this.ch==='-') {
-            numString = '-'
-            this.next('-')
+        const input = this.input
+        const start = this.at-1
+        let i = start
+        let code = input.charCodeAt(i)
+
+        if (code===45) {
+            i+=1
         }
 
-        if (this.ch==='0') {
-            numString += this.ch
-            this.next()
-            if (this.ch>='0' && this.ch<='9') {
+        code = input.charCodeAt(i)
+        if (code===48) {
+            i+=1
+            code = input.charCodeAt(i)
+            if (code>=48 && code<=57) {
+                this.ch = input.charAt(i)
+                this.at = i+1
                 this.error('Syntax Error: expected number value')
             }
-        } else if (this.ch>='1' && this.ch<='9') {
-            while(this.ch>='0' && this.ch<='9') {
-                numString += this.ch
-                this.next()
-            }
+        } else if (code>=49 && code<=57) {
+            do {
+                i+=1
+                code = input.charCodeAt(i)
+            } while(code>=48 && code<=57)
         } else {
+            this.ch = input.charAt(i)
+            this.at = i+1
             this.error('Syntax Error: expected number value')
         }
 
-        if (this.ch==='.') {
-            numString+='.'
-            this.next('.')
-            if (this.ch < '0' || this.ch > '9') {
+        if (code===46) {
+            i+=1
+            code = input.charCodeAt(i)
+            if (!(code>=48 && code<=57)) {
+                this.ch = input.charAt(i)
+                this.at = i+1
                 this.error('Syntax Error: expected number value')
             }
-            while(this.ch >= '0' && this.ch <= '9') {
-                numString += this.ch
-                this.next()
-            }
+            do {
+                i+=1
+                code = input.charCodeAt(i)
+            } while(code>=48 && code<=57)
         }
-        if (this.ch === 'e' || this.ch === 'E') {
-            numString += this.ch
-            this.next()
-            if (this.ch === '-' || this.ch === '+') {
-                numString += this.ch
-                this.next()
+
+        if (code===101 || code===69) {
+            i+=1
+            code = input.charCodeAt(i)
+            if (code===45 || code===43) {
+                i+=1
+                code = input.charCodeAt(i)
             }
-            if (this.ch < '0' || this.ch > '9') {
+            if (!(code>=48 && code<=57)) {
+                this.ch = input.charAt(i)
+                this.at = i+1
                 this.error('Syntax Error: expected number value')
             }
-            while (this.ch >= '0' && this.ch <= '9') {
-                numString += this.ch
-                this.next()
-            }
+            do {
+                i+=1
+                code = input.charCodeAt(i)
+            } while(code>=48 && code<=57)
         }
-        let result = new Number(numString).valueOf()
+
+        const numString = input.slice(start, i)
+        this.ch = input.charAt(i)
+        this.at = i+1
+
+        let result = Number(numString)
         if (tagName) {
             switch(tagName) {
                 case "int":
@@ -450,50 +483,66 @@ export default class Parser
 
     string(tagName)
     {
-        let value = "", hex, i, uffff;
         if (this.ch !== '"') {
             this.error("Syntax Error")
         }
-        this.next('"')
-        while(this.ch) {
-            if (this.ch==='"') {
-                this.next()
+        const input = this.input
+        let value = ""
+        let chunkStart = this.at
+        let i = chunkStart
+
+        while(true) {
+            STRING_SPECIAL.lastIndex = i
+            const match = STRING_SPECIAL.exec(input)
+            if (!match) {
+                this.ch = ''
+                this.at = input.length+1
+                this.error("Syntax error: incomplete string")
+            }
+
+            i = match.index
+            value += input.slice(chunkStart, i)
+
+            if (match[0]==='"') {
+                i+=1
+                this.ch = input.charAt(i)
+                this.at = i+1
                 this.checkStringType(tagName, value)
                 return value
             }
-            if (this.ch==='\\') {
-                this.next()
-                if (this.ch==='u') {
-                    uffff=0
-                    this.next('u')
-                    for (i=0; i<4; i++) {
-                        hex = parseInt(this.ch, 16)
-                        if (!(
-                            (this.ch>='0' && this.ch<='9')
-                            || (this.ch>='a' && this.ch<='f')
-                            || (this.ch>='A' && this.ch<='F')
-                        )) {
-                            this.error('Syntax error: invalid unicode escape')
-                        }
-                        uffff = uffff * 16 + hex
-                        this.next()
-                    }
-                    value += String.fromCharCode(uffff)
-                } else if (typeof this.escapee[this.ch] === 'string') {
-                    value += this.escapee[this.ch]
-                    this.next()
-                } else {
-                    this.error("Syntax error: invalid escape")
-                }
-            } else {
-                if (this.ch.charCodeAt(0)<0x20) {
-                    this.error("Syntax error: invalid character")
-                }
-                value += this.ch
-                this.next()
+
+            if (match[0]!=='\\') {
+                this.ch = match[0]
+                this.at = i+1
+                this.error("Syntax error: invalid character")
             }
+
+            i+=1
+            const escaped = input.charAt(i)
+            if (escaped==='u') {
+                let uffff=0
+                for (let j=1; j<=4; j++) {
+                    const hex = hexValue(input.charCodeAt(i+j))
+                    if (hex<0) {
+                        this.ch = input.charAt(i+j)
+                        this.at = i+j+1
+                        this.error('Syntax error: invalid unicode escape')
+                    }
+                    uffff = uffff * 16 + hex
+                }
+                value += String.fromCharCode(uffff)
+                i+=5
+            } else if (typeof this.escapee[escaped] === 'string') {
+                value += this.escapee[escaped]
+                i+=1
+            } else {
+                this.ch = escaped
+                this.at = i+1
+                this.error("Syntax error: invalid escape")
+            }
+
+            chunkStart = i
         }
-        this.error("Syntax error: incomplete string")
     }
 
     tag()
