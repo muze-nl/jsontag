@@ -125,11 +125,13 @@ This function will return the type of the value. It will return the normal JSON 
 
 This will annotate the value as being of type `type`. Valid types are: 
 `object`,`array`,`string`,`number`,
-`decimal`,`money`,`uuid`,`url`,`link`,`date`,`time`,`datetime`, `interval`, `timestamp`,
+`decimal`,`money`,`uuid`,`url`,`link`,`date`,`time`,`datetime`, `duration`, `timestamp`,
 `text`, `blob`, `color`, `email`, `hash`, `phone`,
 `int`, `int8`, `int16`, `int32`, `int64`,
 `uint`, `uint8`, `uint16`, `uint32`, `uint64`,
 `float`, `float32`, `float64`
+
+The canonical runtime list is available as `JSONTag.types`. The related `JSONTag.typeDefinitions` object records the JSON value kind expected for each type.
 
 ### getAttribute
 
@@ -232,7 +234,7 @@ The list below is preliminary. The aim is to have a good coverage of most used o
 - decimal
 - email
 - hash
-- interval
+- duration
 - link
 - money
 - phone

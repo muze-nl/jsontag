@@ -21,6 +21,12 @@ export default class JSONTag
         JSONTag.getType       = attr.getType
         JSONTag.setType       = attr.setType
         JSONTag.getTypeString = attr.getTypeString
+        JSONTag.types         = attr.types
+        JSONTag.valueTypes    = attr.valueTypes
+        JSONTag.jsonTypes     = attr.jsonTypes
+        JSONTag.stringTypes   = attr.stringTypes
+        JSONTag.numberTypes   = attr.numberTypes
+        JSONTag.typeDefinitions = attr.typeDefinitions
 
         JSONTag.setAttribute        = attr.setAttribute
         JSONTag.getAttribute        = attr.getAttribute

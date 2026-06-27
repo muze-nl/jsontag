@@ -1,6 +1,7 @@
 // non streaming handbuilt jsontag parser
 import * as JSONTag from './functions.mjs'
 import Null from './Null.mjs'
+import { getTypeValueKind, isKnownType, isTagType } from './types.mjs'
 
 const STRING_SPECIAL = /["\\\u0000-\u001f]/g
 
@@ -313,6 +314,12 @@ export default class Parser
 
         let result = Number(numString)
         if (tagName) {
+            if (!isKnownType(tagName)) {
+                this.error('Syntax error: unknown tagName '+tagName)
+            }
+            if (getTypeValueKind(tagName)!=='number') {
+                this.typeError(tagName,numString)
+            }
             switch(tagName) {
                 case "int":
                     this.isInt(numString)
@@ -356,9 +363,6 @@ export default class Parser
                     break
                 case "number":
                     //FIXME: what to check? should already be covered by JSON parsing rules?
-                    break
-                default:
-                    this.typeError(tagName,numString)
                     break
             }
         }
@@ -477,25 +481,13 @@ export default class Parser
         if (!tagName) {
             return
         }
+        if (!isKnownType(tagName)) {
+            this.error('Syntax error: unknown tagName '+tagName)
+        }
+        if (getTypeValueKind(tagName)!=='string') {
+            this.typeError(tagName, value)
+        }
         switch(tagName){
-            case "object":
-            case "array":
-            case "int8":
-            case "uint8":
-            case "int16":
-            case "uint16":
-            case "int32":
-            case "uint32":
-            case "int64":
-            case "uint64":
-            case "int":
-            case "uint":
-            case "float32":
-            case "float64":
-            case "float":
-            case "timestamp":
-                this.typeError(tagName, value)
-                break
             case "uuid":
                 return this.isType('uuid',value)
             case "decimal":
@@ -528,7 +520,7 @@ export default class Parser
             case "datetime":
                 return this.isType('datetime',value)
         }
-        this.error('Syntax error: unknown tagName '+tagName)
+        return true
     }
 
     string(tagName)
@@ -780,6 +772,12 @@ export default class Parser
         if (this.ch==='<') {
             tagOb = this.tag()
             tagName = tagOb.tagName
+            if (!isKnownType(tagName)) {
+                this.error('Syntax error: unknown tagName '+tagName)
+            }
+            if (!isTagType(tagName)) {
+                this.error('Syntax error: cannot tag '+tagName+' values')
+            }
             this.whitespace()
         }
         switch(this.ch) {

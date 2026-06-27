@@ -17,6 +17,12 @@ globalThis.JSONTag = {
     getType: attr.getType,
     setType: attr.setType,
     getTypeString: attr.getTypeString,
+    types: attr.types,
+    valueTypes: attr.valueTypes,
+    jsonTypes: attr.jsonTypes,
+    stringTypes: attr.stringTypes,
+    numberTypes: attr.numberTypes,
+    typeDefinitions: attr.typeDefinitions,
 
     setAttribute: attr.setAttribute,
     getAttribute: attr.getAttribute,
