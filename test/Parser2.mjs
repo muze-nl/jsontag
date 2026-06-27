@@ -322,6 +322,18 @@ tap.test('string escapes', t => {
 	t.end()
 })
 
+tap.test('plain JSON strings can contain tag-like text', t => {
+	let json = `{
+		"text": "2 < 3",
+		"tagText": "<date>\\"1972-09-20\\"",
+		"list": [ "<link>\\"foo\\"", "plain" ]
+	}`
+	let result = JSONTag.parse(json)
+
+	t.same(result, JSON.parse(json))
+	t.end()
+})
+
 tap.test('empty containers and string backed types', t => {
 	let result = JSONTag.parse(`{
 		"object": {},
@@ -338,6 +350,24 @@ tap.test('empty containers and string backed types', t => {
 	t.equal(JSONTag.getType(result.range), 'range')
 	t.equal(JSONTag.stringify(result.range), '<range>"[-1.5,2]"')
 	t.equal(JSONTag.getType(result.relativeUrl), 'url')
+	t.end()
+})
+
+tap.test('tagged containers can contain plain JSON subtrees', t => {
+	let result = JSONTag.parse(`<object class="Document">{
+		"title": "2 < 3",
+		"rows": [
+			{"id": 1, "name": "One"},
+			{"id": 2, "name": "Two"}
+		]
+	}`)
+
+	t.equal(JSONTag.getType(result), 'object')
+	t.equal(JSONTag.getAttribute(result, 'class'), 'Document')
+	t.same(result.rows, [
+		{id: 1, name: 'One'},
+		{id: 2, name: 'Two'}
+	])
 	t.end()
 })
 
@@ -448,6 +478,19 @@ break"`,
 		`"tab	char"`,
 		`"bad\\uZZZZ"`,
 		`"bad\\u12x4"`
+	]
+
+	syntaxErrors.forEach(line => {
+		t.throws(() => JSONTag.parse(line), 'rejects '+JSON.stringify(line))
+	})
+	t.end()
+})
+
+tap.test('plain JSON fast path rejects prototype pollution', t => {
+	let syntaxErrors = [
+		`{"__proto__":{"admin":true}}`,
+		`{"\\u005f\\u005fproto__":{"admin":true}}`,
+		`{"nested":{"__proto__":{"admin":true}}}`
 	]
 
 	syntaxErrors.forEach(line => {

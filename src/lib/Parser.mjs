@@ -62,6 +62,122 @@ export default class Parser
         this.at+=1
         return this.ch
     }
+
+    hasJSONTagOutsideString(input)
+    {
+        let inString = false
+        let escaped = false
+
+        for (let i=0; i<input.length; i++) {
+            const ch = input.charAt(i)
+            if (inString) {
+                if (escaped) {
+                    escaped = false
+                } else if (ch==='\\') {
+                    escaped = true
+                } else if (ch==='"') {
+                    inString = false
+                }
+            } else if (ch==='"') {
+                inString = true
+            } else if (ch==='<') {
+                return true
+            }
+        }
+        return false
+    }
+
+    validatePlainJSON(value)
+    {
+        if (value && typeof value === 'object') {
+            if (Object.prototype.hasOwnProperty.call(value, '__proto__')) {
+                this.error("Attempt at prototype pollution")
+            }
+            Object.keys(value).forEach(key => {
+                this.validatePlainJSON(value[key])
+            })
+        }
+    }
+
+    parsePlainJSON(input, reviver)
+    {
+        let result
+        try {
+            result = JSON.parse(input)
+        } catch(e) {
+            this.error(e.message)
+        }
+        this.validatePlainJSON(result)
+        if (typeof reviver == 'function') {
+            this.walk({"":result}, "", reviver)
+            this.resolveLinks()
+        }
+        return result
+    }
+
+    findPlainJSONContainerEnd(start)
+    {
+        let depth = 0
+        let inString = false
+        let escaped = false
+
+        for (let i=start; i<this.input.length; i++) {
+            const ch = this.input.charAt(i)
+            if (inString) {
+                if (escaped) {
+                    escaped = false
+                } else if (ch==='\\') {
+                    escaped = true
+                } else if (ch==='"') {
+                    inString = false
+                }
+                continue
+            }
+
+            switch(ch) {
+                case '"':
+                    inString = true
+                    break
+                case '<':
+                    return null
+                case '{':
+                case '[':
+                    depth+=1
+                    break
+                case '}':
+                case ']':
+                    depth-=1
+                    if (depth===0) {
+                        return i+1
+                    }
+                    if (depth<0) {
+                        return null
+                    }
+                    break
+            }
+        }
+        return null
+    }
+
+    plainJSONContainer()
+    {
+        const start = this.at-1
+        const end = this.findPlainJSONContainerEnd(start)
+        if (end===null) {
+            return undefined
+        }
+
+        let value
+        try {
+            value = JSON.parse(this.input.slice(start, end))
+        } catch(e) {
+            this.error(e.message)
+        }
+        this.validatePlainJSON(value)
+        this.ch = this.input.charAt(end)
+        this.at = end+1
+        return value
+    }
     
     number(tagName)
     {
@@ -589,13 +705,19 @@ export default class Parser
                 if (tagName && tagName!=='object') {
                     this.typeError(tagName, this.ch)
                 }
-                result = this.object()
+                result = this.plainJSONContainer()
+                if (typeof result === 'undefined') {
+                    result = this.object()
+                }
             break
             case '[':
                 if (tagName && tagName!=='array') {
                     this.typeError(tagName, this.ch)
                 }
-                result = this.array()
+                result = this.plainJSONContainer()
+                if (typeof result === 'undefined') {
+                    result = this.array()
+                }
             break
             case '"':
                 result = this.string(tagName)
@@ -716,6 +838,9 @@ export default class Parser
         this.at = 0
         this.ch = " "
         this.input = input
+        if (!this.hasJSONTagOutsideString(input)) {
+            return this.parsePlainJSON(input, reviver)
+        }
         const result = this.value()
         this.whitespace()
         if (this.ch) {
