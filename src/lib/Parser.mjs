@@ -70,14 +70,31 @@ export default class Parser
             numString = '-'
             this.next('-')
         }
-        while(this.ch>='0' && this.ch<='9') {
+
+        if (this.ch==='0') {
             numString += this.ch
             this.next()
+            if (this.ch>='0' && this.ch<='9') {
+                this.error('Syntax Error: expected number value')
+            }
+        } else if (this.ch>='1' && this.ch<='9') {
+            while(this.ch>='0' && this.ch<='9') {
+                numString += this.ch
+                this.next()
+            }
+        } else {
+            this.error('Syntax Error: expected number value')
         }
+
         if (this.ch==='.') {
             numString+='.'
-            while(this.next() && this.ch >= '0' && this.ch <= '9') {
+            this.next('.')
+            if (this.ch < '0' || this.ch > '9') {
+                this.error('Syntax Error: expected number value')
+            }
+            while(this.ch >= '0' && this.ch <= '9') {
                 numString += this.ch
+                this.next()
             }
         }
         if (this.ch === 'e' || this.ch === 'E') {
@@ -86,6 +103,9 @@ export default class Parser
             if (this.ch === '-' || this.ch === '+') {
                 numString += this.ch
                 this.next()
+            }
+            if (this.ch < '0' || this.ch > '9') {
+                this.error('Syntax Error: expected number value')
             }
             while (this.ch >= '0' && this.ch <= '9') {
                 numString += this.ch
@@ -329,22 +349,30 @@ export default class Parser
                 this.next()
                 if (this.ch==='u') {
                     uffff=0
+                    this.next('u')
                     for (i=0; i<4; i++) {
-                        hex = parseInt(this.next(), 16)
-                        if (!isFinite(hex)) {
-                            break
+                        hex = parseInt(this.ch, 16)
+                        if (!(
+                            (this.ch>='0' && this.ch<='9')
+                            || (this.ch>='a' && this.ch<='f')
+                            || (this.ch>='A' && this.ch<='F')
+                        )) {
+                            this.error('Syntax error: invalid unicode escape')
                         }
                         uffff = uffff * 16 + hex
+                        this.next()
                     }
                     value += String.fromCharCode(uffff)
-                    this.next()
                 } else if (typeof this.escapee[this.ch] === 'string') {
                     value += this.escapee[this.ch]
                     this.next()
                 } else {
-                    break
+                    this.error("Syntax error: invalid escape")
                 }
             } else {
+                if (this.ch.charCodeAt(0)<0x20) {
+                    this.error("Syntax error: invalid character")
+                }
                 value += this.ch
                 this.next()
             }
@@ -430,7 +458,7 @@ export default class Parser
         if (!w || typeof w !== 'string') {
             this.error('Syntax error: expected boolean or null, got "'+w+'"')
         }
-        switch(w.toLowerCase()) {
+        switch(w) {
             case 'true':
                 if (tagName && tagName!=='boolean') {
                     this.typeError(tagName,w)

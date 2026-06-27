@@ -406,6 +406,56 @@ tap.test('invalid strings and urls', t => {
 	t.end()
 })
 
+tap.test('reject non-standard JSON literals', t => {
+	let syntaxErrors = [
+		`TRUE`,
+		`False`,
+		`NULL`,
+		`[TRUE]`,
+		`{"ok":False}`,
+		`[null,NULL]`
+	]
+
+	syntaxErrors.forEach(line => {
+		t.throws(() => JSONTag.parse(line), 'rejects '+JSON.stringify(line))
+	})
+	t.end()
+})
+
+tap.test('reject non-standard JSON numbers', t => {
+	let syntaxErrors = [
+		`01`,
+		`1.`,
+		`-.1`,
+		`-`,
+		`1e`,
+		`1e+`,
+		`[01]`,
+		`{"a":01}`,
+		`[-.1]`
+	]
+
+	syntaxErrors.forEach(line => {
+		t.throws(() => JSONTag.parse(line), 'rejects '+JSON.stringify(line))
+	})
+	t.end()
+})
+
+tap.test('reject non-standard JSON strings', t => {
+	let syntaxErrors = [
+		`"line
+break"`,
+		`"tab	char"`,
+		`"bad\\uZZZZ"`,
+		`"bad\\u12x4"`
+	]
+
+	syntaxErrors.forEach(line => {
+		t.throws(() => JSONTag.parse(line), 'rejects '+JSON.stringify(line))
+	})
+	t.end()
+})
+
 tap.test('incomplete or trailing input', t => {
 	let syntaxErrors = [
 		`[1,`,
