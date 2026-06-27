@@ -18,6 +18,16 @@ function hexValue(code)
     return -1
 }
 
+function isWhitespace(code)
+{
+    return code===32 || code===10 || code===13 || code===9
+}
+
+function needsPrototypeValidation(input)
+{
+    return input.indexOf('__proto__')!==-1 || input.indexOf('\\')!==-1
+}
+
 export default class Parser
 {
     at
@@ -80,6 +90,10 @@ export default class Parser
 
     hasJSONTagOutsideString(input)
     {
+        if (input.indexOf('<')===-1) {
+            return false
+        }
+
         let inString = false
         let escaped = false
 
@@ -122,7 +136,9 @@ export default class Parser
         } catch(e) {
             this.error(e.message)
         }
-        this.validatePlainJSON(result)
+        if (needsPrototypeValidation(input)) {
+            this.validatePlainJSON(result)
+        }
         if (typeof reviver == 'function') {
             this.walk({"":result}, "", reviver)
             this.resolveLinks()
@@ -135,9 +151,10 @@ export default class Parser
         let depth = 0
         let inString = false
         let escaped = false
+        const input = this.input
 
-        for (let i=start; i<this.input.length; i++) {
-            const ch = this.input.charAt(i)
+        for (let i=start; i<input.length; i++) {
+            const ch = input.charAt(i)
             if (inString) {
                 if (escaped) {
                     escaped = false
@@ -174,6 +191,19 @@ export default class Parser
         return null
     }
 
+    whitespace()
+    {
+        let i = Math.max(this.at-1, 0)
+        const input = this.input
+
+        while(i<input.length && isWhitespace(input.charCodeAt(i))) {
+            i+=1
+        }
+
+        this.ch = input.charAt(i)
+        this.at = i+1
+    }
+
     plainJSONContainer()
     {
         const start = this.at-1
@@ -182,15 +212,35 @@ export default class Parser
             return undefined
         }
 
+        const json = this.input.slice(start, end)
         let value
         try {
-            value = JSON.parse(this.input.slice(start, end))
+            value = JSON.parse(json)
         } catch(e) {
             this.error(e.message)
         }
-        this.validatePlainJSON(value)
+        if (needsPrototypeValidation(json)) {
+            this.validatePlainJSON(value)
+        }
         this.ch = this.input.charAt(end)
         this.at = end+1
+        return value
+    }
+
+    plainJSONRemainder()
+    {
+        const json = this.input.slice(this.at-1).trimEnd()
+        let value
+        try {
+            value = JSON.parse(json)
+        } catch(e) {
+            return undefined
+        }
+        if (needsPrototypeValidation(json)) {
+            this.validatePlainJSON(value)
+        }
+        this.ch = ''
+        this.at = this.input.length+1
         return value
     }
     
@@ -579,23 +629,6 @@ export default class Parser
         this.error('Syntax Error: unexpected end of input')
     }
 
-    whitespace()
-    {
-        while (this.ch) {
-            switch(this.ch) {
-                case ' ':
-                case "\t":
-                case "\r":
-                case "\n":
-                    this.next()
-                break
-                default:
-                    return
-                break
-            }
-        }
-    }
-
     word()
     {
         //[a-z][a-z0-9_]*
@@ -740,7 +773,7 @@ export default class Parser
         this.error("Input stopped early")
     }
 
-    value()
+    value(isRoot=false)
     {
         let tagOb, result, tagName;
         this.whitespace()
@@ -754,7 +787,7 @@ export default class Parser
                 if (tagName && tagName!=='object') {
                     this.typeError(tagName, this.ch)
                 }
-                result = this.plainJSONContainer()
+                result = isRoot && tagOb ? this.plainJSONRemainder() : this.plainJSONContainer()
                 if (typeof result === 'undefined') {
                     result = this.object()
                 }
@@ -763,7 +796,7 @@ export default class Parser
                 if (tagName && tagName!=='array') {
                     this.typeError(tagName, this.ch)
                 }
-                result = this.plainJSONContainer()
+                result = isRoot && tagOb ? this.plainJSONRemainder() : this.plainJSONContainer()
                 if (typeof result === 'undefined') {
                     result = this.array()
                 }
@@ -890,7 +923,7 @@ export default class Parser
         if (!this.hasJSONTagOutsideString(input)) {
             return this.parsePlainJSON(input, reviver)
         }
-        const result = this.value()
+        const result = this.value(true)
         this.whitespace()
         if (this.ch) {
             this.error("Syntax error")
