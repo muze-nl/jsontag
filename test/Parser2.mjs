@@ -170,6 +170,33 @@ tap.test('Types', t => {
 	t.end()
 })
 
+tap.test('canonical type list', t => {
+	const expectedTypes = [
+		'object','array','string','number',
+		'decimal','money','uuid','url','link','date','time','datetime','duration','timestamp',
+		'text','blob','color','email','hash','phone','range',
+		'int','int8','int16','int32','int64',
+		'uint','uint8','uint16','uint32','uint64',
+		'float','float32','float64'
+	]
+
+	t.same(JSONTag.types, expectedTypes)
+	t.ok(JSONTag.valueTypes.includes('boolean'))
+	t.notOk(JSONTag.types.includes('boolean'))
+	t.ok(JSONTag.types.includes('duration'))
+	t.notOk(JSONTag.types.includes('interval'))
+	t.equal(JSONTag.typeDefinitions.duration.valueKind, 'string')
+	t.equal(JSONTag.typeDefinitions.interval, undefined)
+
+	let result = JSONTag.parse('<duration>"P15D"')
+	t.equal(JSONTag.getType(result), 'duration')
+	t.equal(JSONTag.stringify(result), '<duration>"P15D"')
+	t.throws(() => JSONTag.parse('<interval>"P15D"'))
+	t.throws(() => JSONTag.setType(new String('P15D'), 'interval'))
+	t.throws(() => JSONTag.parse('<boolean>true'))
+	t.end()
+})
+
 tap.test('Prototype Pollution', t => {
 	let jsont = `{
 	"foo": "bar",
@@ -299,6 +326,22 @@ tap.test('number formats and numeric types', t => {
 	t.end()
 })
 
+tap.test('tagged numbers use strict JSON number syntax', t => {
+	let syntaxErrors = [
+		`<number>01`,
+		`<number>1.`,
+		`<number>-.1`,
+		`<number>-`,
+		`<number>1e`,
+		`<number>1e+`
+	]
+
+	syntaxErrors.forEach(line => {
+		t.throws(() => JSONTag.parse(line), 'rejects '+line)
+	})
+	t.end()
+})
+
 tap.test('string escapes', t => {
 	let result = JSONTag.parse(`{
 		"quote": "\\"",
@@ -319,6 +362,14 @@ tap.test('string escapes', t => {
 	t.equal(result.newline, '\n')
 	t.equal(result.return, '\r')
 	t.equal(result.tab, '\t')
+	t.end()
+})
+
+tap.test('tagged string escapes', t => {
+	let result = JSONTag.parse(`<string>"plain text with \\n newline and \\u20ac"`)
+
+	t.equal(result.valueOf(), 'plain text with \n newline and €')
+	t.equal(JSONTag.getType(result), 'string')
 	t.end()
 })
 
@@ -426,6 +477,9 @@ tap.test('invalid strings and urls', t => {
 	let syntaxErrors = [
 		`"unterminated`,
 		`"invalid\\xescape"`,
+		`<string>"bad\\uZZZZ"`,
+		`<string>"bad
+control"`,
 		`<url>"http://["`,
 		`<range>"1,2"`
 	]

@@ -1,7 +1,60 @@
 // non streaming handbuilt jsontag parser
 import * as JSONTag from './functions.mjs'
 import Null from './Null.mjs'
+import { getTypeValueKind, isKnownType, isTagType, integerRanges, floatRanges, inRange } from './types.mjs'
 
+const STRING_SPECIAL = /["\\\u0000-\u001f]/g
+// a number literal may be an integer beyond 2^53 if it has 16 digits, or an
+// exponent. Two expressions, and \d written out 16 times instead of \d{16},
+// are much faster in V8.
+const SIXTEEN_DIGITS = /\d\d\d\d\d\d\d\d\d\d\d\d\d\d\d\d/
+const EXPONENT = /\d[eE]/
+
+function mayHaveLargeNumber(text)
+{
+    return SIXTEEN_DIGITS.test(text) || EXPONENT.test(text)
+}
+const SAFE_INTEGER_RANGE = [BigInt(Number.MIN_SAFE_INTEGER), BigInt(Number.MAX_SAFE_INTEGER)]
+
+function hexValue(code)
+{
+    if (code>=48 && code<=57) {
+        return code-48
+    }
+    if (code>=65 && code<=70) {
+        return code-55
+    }
+    if (code>=97 && code<=102) {
+        return code-87
+    }
+    return -1
+}
+
+function isWhitespace(code)
+{
+    return code===32 || code===10 || code===13 || code===9
+}
+
+function isPathLink(value)
+{
+    if (!(value instanceof String)) {
+        return false
+    }
+    const link = value.valueOf()
+    return link.charCodeAt(0)===35 && link.charCodeAt(1)===33 // "#!"
+        && (link.length===2 || link.charCodeAt(2)===47) // "#!" or "#!/..."
+}
+
+// "#!/a~1b/0" -> ["a/b", "0"]
+function pathSegments(link)
+{
+    return link.slice(3).split('/').map(segment => segment.replace(/~1/g, '/').replace(/~0/g, '~'))
+}
+
+function needsPrototypeValidation(input)
+{
+    return input.indexOf('__proto__')!==-1 || input.indexOf('\\')!==-1
+}
 
 export default class Parser
 {
@@ -10,6 +63,9 @@ export default class Parser
     input
     context
     meta
+    pathLinks = []
+    // containers that are being parsed, outermost first: { container, key }
+    stack = []
 
     escapee = {
         '"': '"',
@@ -23,6 +79,7 @@ export default class Parser
     }
 
     regexes = {
+        hexColor: /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i,
         color: /^(rgb|hsl)a?\((\d+%?(deg|rad|grad|turn)?[,\s]+){2,3}[\s\/]*[\d\.]+%?\)$/i,
         email: /^[A-Za-z0-9_!#$%&'*+\/=?`{|}~^.-]+@[A-Za-z0-9.-]+$/,
         uuid:  /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/,
@@ -32,8 +89,10 @@ export default class Parser
         duration: /^(-?)P(?=\d|T\d)(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)([DW]))?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/,
         phone: /^[+]?(?:\(\d+(?:\.\d+)?\)|\d+(?:\.\d+)?)(?:[ -]?(?:\(\d+(?:\.\d+)?\)|\d+(?:\.\d+)?))*(?:[ ]?(?:x|ext)\.?[ ]?\d{1,5})?$/,
         time: /^(\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?$/,
-        date: /^-?[1-9][0-9]{3,}-([0][1-9]|[1][0-2])-([1-2][0-9]|[0][1-9]|[3][0-1])$/,
-        datetime: /^(\d{4,})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?Z?$/i, // RFC 3339 #5.6 allows lowercase z and t as well
+        // years have at least 4 digits, and may have a sign, as in ISO 8601 expanded years, e.g. +010000
+        // or -000001. A negative year must not be zero, e.g. -0000. No lookahead, so Rust can use the same.
+        date: /^(\+?\d{4,}|-(?:[1-9]\d{3,}|0[1-9]\d{2,}|00[1-9]\d+|000\d*[1-9]\d*))-([0][1-9]|[1][0-2])-([1-2][0-9]|[0][1-9]|[3][0-1])$/,
+        datetime: /^(\+?\d{4,}|-(?:[1-9]\d{3,}|0[1-9]\d{2,}|00[1-9]\d+|000\d*[1-9]\d*))-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?Z?$/i, // RFC 3339 #5.6 allows lowercase z and t as well
         range: /^\[-?(\d+\.)?\d+\,-?(\d+\.)?\d+\]$/
     }
 
@@ -65,6 +124,10 @@ export default class Parser
 
     hasJSONTagOutsideString(input)
     {
+        if (input.indexOf('<')===-1) {
+            return false
+        }
+
         let inString = false
         let escaped = false
 
@@ -99,6 +162,27 @@ export default class Parser
         }
     }
 
+    unsafeInteger(number)
+    {
+        this.error('Syntax error: '+number+' is an integer beyond 2^53 and may have lost precision, use <int64>, <uint64> or a float type')
+    }
+
+    /**
+     * Rejects integers beyond 2^53, see number()
+     */
+    validateNumbers(value)
+    {
+        if (typeof value === 'number') {
+            if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
+                this.unsafeInteger(value)
+            }
+        } else if (value && typeof value === 'object') {
+            for (const key of Object.keys(value)) {
+                this.validateNumbers(value[key])
+            }
+        }
+    }
+
     parsePlainJSON(input, reviver)
     {
         let result
@@ -107,7 +191,12 @@ export default class Parser
         } catch(e) {
             this.error(e.message)
         }
-        this.validatePlainJSON(result)
+        if (needsPrototypeValidation(input)) {
+            this.validatePlainJSON(result)
+        }
+        if (mayHaveLargeNumber(input)) {
+            this.validateNumbers(result)
+        }
         if (typeof reviver == 'function') {
             this.walk({"":result}, "", reviver)
             this.resolveLinks()
@@ -120,9 +209,10 @@ export default class Parser
         let depth = 0
         let inString = false
         let escaped = false
+        const input = this.input
 
-        for (let i=start; i<this.input.length; i++) {
-            const ch = this.input.charAt(i)
+        for (let i=start; i<input.length; i++) {
+            const ch = input.charAt(i)
             if (inString) {
                 if (escaped) {
                     escaped = false
@@ -159,6 +249,19 @@ export default class Parser
         return null
     }
 
+    whitespace()
+    {
+        let i = Math.max(this.at-1, 0)
+        const input = this.input
+
+        while(i<input.length && isWhitespace(input.charCodeAt(i))) {
+            i+=1
+        }
+
+        this.ch = input.charAt(i)
+        this.at = i+1
+    }
+
     plainJSONContainer()
     {
         const start = this.at-1
@@ -167,117 +270,132 @@ export default class Parser
             return undefined
         }
 
+        const json = this.input.slice(start, end)
         let value
         try {
-            value = JSON.parse(this.input.slice(start, end))
+            value = JSON.parse(json)
         } catch(e) {
             this.error(e.message)
         }
-        this.validatePlainJSON(value)
+        if (needsPrototypeValidation(json)) {
+            this.validatePlainJSON(value)
+        }
+        if (mayHaveLargeNumber(json)) {
+            this.validateNumbers(value)
+        }
         this.ch = this.input.charAt(end)
         this.at = end+1
+        return value
+    }
+
+    plainJSONRemainder()
+    {
+        const json = this.input.slice(this.at-1).trimEnd()
+        let value
+        try {
+            value = JSON.parse(json)
+        } catch(e) {
+            return undefined
+        }
+        if (needsPrototypeValidation(json)) {
+            this.validatePlainJSON(value)
+        }
+        if (mayHaveLargeNumber(json)) {
+            this.validateNumbers(value)
+        }
+        this.ch = ''
+        this.at = this.input.length+1
         return value
     }
     
     number(tagName)
     {
-        let numString = ''
-        if (this.ch==='-') {
-            numString = '-'
-            this.next('-')
+        const input = this.input
+        const start = this.at-1
+        let i = start
+        let code = input.charCodeAt(i)
+
+        if (code===45) {
+            i+=1
         }
 
-        if (this.ch==='0') {
-            numString += this.ch
-            this.next()
-            if (this.ch>='0' && this.ch<='9') {
+        code = input.charCodeAt(i)
+        if (code===48) {
+            i+=1
+            code = input.charCodeAt(i)
+            if (code>=48 && code<=57) {
+                this.ch = input.charAt(i)
+                this.at = i+1
                 this.error('Syntax Error: expected number value')
             }
-        } else if (this.ch>='1' && this.ch<='9') {
-            while(this.ch>='0' && this.ch<='9') {
-                numString += this.ch
-                this.next()
-            }
+        } else if (code>=49 && code<=57) {
+            do {
+                i+=1
+                code = input.charCodeAt(i)
+            } while(code>=48 && code<=57)
         } else {
+            this.ch = input.charAt(i)
+            this.at = i+1
             this.error('Syntax Error: expected number value')
         }
 
-        if (this.ch==='.') {
-            numString+='.'
-            this.next('.')
-            if (this.ch < '0' || this.ch > '9') {
+        if (code===46) {
+            i+=1
+            code = input.charCodeAt(i)
+            if (!(code>=48 && code<=57)) {
+                this.ch = input.charAt(i)
+                this.at = i+1
                 this.error('Syntax Error: expected number value')
             }
-            while(this.ch >= '0' && this.ch <= '9') {
-                numString += this.ch
-                this.next()
-            }
+            do {
+                i+=1
+                code = input.charCodeAt(i)
+            } while(code>=48 && code<=57)
         }
-        if (this.ch === 'e' || this.ch === 'E') {
-            numString += this.ch
-            this.next()
-            if (this.ch === '-' || this.ch === '+') {
-                numString += this.ch
-                this.next()
+
+        if (code===101 || code===69) {
+            i+=1
+            code = input.charCodeAt(i)
+            if (code===45 || code===43) {
+                i+=1
+                code = input.charCodeAt(i)
             }
-            if (this.ch < '0' || this.ch > '9') {
+            if (!(code>=48 && code<=57)) {
+                this.ch = input.charAt(i)
+                this.at = i+1
                 this.error('Syntax Error: expected number value')
             }
-            while (this.ch >= '0' && this.ch <= '9') {
-                numString += this.ch
-                this.next()
-            }
+            do {
+                i+=1
+                code = input.charCodeAt(i)
+            } while(code>=48 && code<=57)
         }
-        let result = new Number(numString).valueOf()
+
+        const numString = input.slice(start, i)
+        this.ch = input.charAt(i)
+        this.at = i+1
+
+        let result = Number(numString)
         if (tagName) {
-            switch(tagName) {
-                case "int":
-                    this.isInt(numString)
-                    break
-                case "uint":
-                    this.isInt(numString, [0,Infinity])
-                    break
-                case "int8":
-                    this.isInt(numString, [-128,127])
-                    break
-                case "uint8":
-                    this.isInt(numString, [0,255])
-                    break
-                case "int16":
-                    this.isInt(numString, [-32768,32767])
-                    break
-                case "uint16":
-                    this.isInt(numString, [0,65535])
-                    break
-                case "int32":
-                    this.isInt(numString, [-2147483648, 2147483647])
-                    break
-                case "uint32":
-                    this.isInt(numString, [0,4294967295])
-                    break
-                case "timestamp":
-                case "int64":
-                    this.isBigInt(numString, [BigInt("-9223372036854775808"),BigInt("9223372036854775807")])
-                    break
-                case "uint64":
-                    this.isBigInt(numString, [0,BigInt("18446744073709551615")])
-                    break
-                case "float":
-                    this.isFloat(numString)
-                    break
-                case "float32":
-                    this.isFloat(numString, [-3.4e+38,3.4e+38])
-                    break
-                case "float64":
-                    this.isFloat(numString, [-1.7e+308,+1.7e+308])
-                    break
-                case "number":
-                    //FIXME: what to check? should already be covered by JSON parsing rules?
-                    break
-                default:
-                    this.typeError(tagName,numString)
-                    break
+            if (!isKnownType(tagName)) {
+                this.error('Syntax error: unknown tagName '+tagName)
             }
+            if (getTypeValueKind(tagName)!=='number') {
+                this.typeError(tagName,numString)
+            }
+            if (tagName==='int64' || tagName==='uint64' || tagName==='timestamp') {
+                result = this.isBigInt(numString, integerRanges[tagName])
+                if (tagName==='timestamp' && inRange(result, SAFE_INTEGER_RANGE)) {
+                    result = Number(result)
+                }
+            } else if (integerRanges[tagName]) {
+                this.isInt(numString, integerRanges[tagName])
+            } else if (floatRanges[tagName]) {
+                this.isFloat(numString, floatRanges[tagName])
+            }
+        }
+        if ((!tagName || tagName==='number') && !Number.isSafeInteger(result) && Number.isInteger(result)) {
+            this.unsafeInteger(numString)
         }
         return result        
     }
@@ -296,39 +414,27 @@ export default class Parser
         if (!Number.isFinite(test.valueOf())) {
             this.error('Syntax Error: expected float value')
         }
-        if (range) {
-            if (typeof range[0] === 'number') {
-                if (test<range[0]) {
-                    this.error('Syntax Error: float value out of range')
-                }
-            }
-            if (typeof range[1] === 'number') {
-                if (test>range[1]) {
-                    this.error('Syntax Error: float value out of range')    
-                }
-            }
+        if (range && !inRange(test.valueOf(), range)) {
+            this.error('Syntax Error: float value out of range')
         }
     }
 
     isBigInt(int, range)
     {
-        let test = BigInt(int)
+        let test
+        try {
+            test = BigInt(int)
+        } catch {
+            this.error('Syntax Error: expected integer value')
+        }
         let str = test.toString()
         if (int!==str) {
             this.error('Syntax Error: expected integer value')
         }
-        if (range) {
-            if (typeof range[0] === 'number' || typeof range[0] === 'bigint') {
-                if (test<range[0]) {
-                    this.error('Syntax Error: integer value out of range')
-                }
-            }
-            if (typeof range[1] === 'number' || typeof range[1] === 'bigint') {
-                if (test>range[1]) {
-                    this.error('Syntax Error: integer value out of range')    
-                }
-            }
+        if (range && !inRange(test.valueOf(), range)) {
+            this.error('Syntax Error: integer value out of range')
         }
+        return test
     }
 
     isInt(int, range)
@@ -338,17 +444,8 @@ export default class Parser
         if (int!==str) {
             this.error('Syntax Error: expected integer value')
         }
-        if (range) {
-            if (typeof range[0] === 'number') {
-                if (test<range[0]) {
-                    this.error('Syntax Error: integer value out of range')
-                }
-            }
-            if (typeof range[1] === 'number') {
-                if (test>range[1]) {
-                    this.error('Syntax Error: integer value out of range')    
-                }
-            }
+        if (range && !inRange(test.valueOf(), range)) {
+            this.error('Syntax Error: integer value out of range')
         }
     }
 
@@ -356,11 +453,7 @@ export default class Parser
     {
         let result = false
         if (color.charAt(0) === "#") {
-            color = color.substring(1)
-            result = ([3, 4, 6, 8].indexOf(color.length) > -1) && !isNaN(parseInt(color, 16))
-            if (result.toString(16)!==color) {
-                this.typeError('color', color)
-            }
+            result = this.regexes.hexColor.test(color)
         } else {
             result = this.regexes.color.test(color)
         }
@@ -394,25 +487,13 @@ export default class Parser
         if (!tagName) {
             return
         }
+        if (!isKnownType(tagName)) {
+            this.error('Syntax error: unknown tagName '+tagName)
+        }
+        if (getTypeValueKind(tagName)!=='string') {
+            this.typeError(tagName, value)
+        }
         switch(tagName){
-            case "object":
-            case "array":
-            case "int8":
-            case "uint8":
-            case "int16":
-            case "uint16":
-            case "int32":
-            case "uint32":
-            case "int64":
-            case "uint64":
-            case "int":
-            case "uint":
-            case "float32":
-            case "float64":
-            case "float":
-            case "timestamp":
-                this.typeError(tagName, value)
-                break
             case "uuid":
                 return this.isType('uuid',value)
             case "decimal":
@@ -445,55 +526,71 @@ export default class Parser
             case "datetime":
                 return this.isType('datetime',value)
         }
-        this.error('Syntax error: unknown tagName '+tagName)
+        return true
     }
 
     string(tagName)
     {
-        let value = "", hex, i, uffff;
         if (this.ch !== '"') {
             this.error("Syntax Error")
         }
-        this.next('"')
-        while(this.ch) {
-            if (this.ch==='"') {
-                this.next()
+        const input = this.input
+        let value = ""
+        let chunkStart = this.at
+        let i = chunkStart
+
+        while(true) {
+            STRING_SPECIAL.lastIndex = i
+            const match = STRING_SPECIAL.exec(input)
+            if (!match) {
+                this.ch = ''
+                this.at = input.length+1
+                this.error("Syntax error: incomplete string")
+            }
+
+            i = match.index
+            value += input.slice(chunkStart, i)
+
+            if (match[0]==='"') {
+                i+=1
+                this.ch = input.charAt(i)
+                this.at = i+1
                 this.checkStringType(tagName, value)
                 return value
             }
-            if (this.ch==='\\') {
-                this.next()
-                if (this.ch==='u') {
-                    uffff=0
-                    this.next('u')
-                    for (i=0; i<4; i++) {
-                        hex = parseInt(this.ch, 16)
-                        if (!(
-                            (this.ch>='0' && this.ch<='9')
-                            || (this.ch>='a' && this.ch<='f')
-                            || (this.ch>='A' && this.ch<='F')
-                        )) {
-                            this.error('Syntax error: invalid unicode escape')
-                        }
-                        uffff = uffff * 16 + hex
-                        this.next()
-                    }
-                    value += String.fromCharCode(uffff)
-                } else if (typeof this.escapee[this.ch] === 'string') {
-                    value += this.escapee[this.ch]
-                    this.next()
-                } else {
-                    this.error("Syntax error: invalid escape")
-                }
-            } else {
-                if (this.ch.charCodeAt(0)<0x20) {
-                    this.error("Syntax error: invalid character")
-                }
-                value += this.ch
-                this.next()
+
+            if (match[0]!=='\\') {
+                this.ch = match[0]
+                this.at = i+1
+                this.error("Syntax error: invalid character")
             }
+
+            i+=1
+            const escaped = input.charAt(i)
+            if (escaped==='u') {
+                let uffff=0
+                for (let j=1; j<=4; j++) {
+                    const hex = hexValue(input.charCodeAt(i+j))
+                    if (hex<0) {
+                        this.ch = input.charAt(i+j)
+                        this.at = i+j+1
+                        this.error('Syntax error: invalid unicode escape')
+                    }
+                    uffff = uffff * 16 + hex
+                }
+                value += String.fromCharCode(uffff)
+                i+=5
+            } else if (typeof this.escapee[escaped] === 'string') {
+                value += this.escapee[escaped]
+                i+=1
+            } else {
+                this.ch = escaped
+                this.at = i+1
+                this.error("Syntax error: invalid escape")
+            }
+
+            chunkStart = i
         }
-        this.error("Syntax error: incomplete string")
     }
 
     tag()
@@ -528,23 +625,6 @@ export default class Parser
             this.whitespace()
         }
         this.error('Syntax Error: unexpected end of input')
-    }
-
-    whitespace()
-    {
-        while (this.ch) {
-            switch(this.ch) {
-                case ' ':
-                case "\t":
-                case "\r":
-                case "\n":
-                    this.next()
-                break
-                default:
-                    return
-                break
-            }
-        }
     }
 
     word()
@@ -599,6 +679,11 @@ export default class Parser
     checkUnresolved(item, object, key)
     {
         if (JSONTag.getType(item)==='link') {
+            if (isPathLink(item)) {
+                // path links are local to this document, see resolvePathLinks()
+                this.pathLinks.push({ src: object, key, link: item })
+                return
+            }
             let link = ''+item
             let links = this.meta.unresolved.get(link)
             if (typeof links === 'undefined') {
@@ -643,13 +728,20 @@ export default class Parser
             this.next(']')
             return array
         }
+        const frame = { container: array, key: 0 }
+        this.stack.push(frame)
         while(this.ch) {
+            frame.key = array.length
             item = this.value()
+            if (isPathLink(item)) {
+                this.checkPathLink(item)
+            }
             this.checkUnresolved(item, array, array.length)
             array.push(item)
             this.whitespace()
             if (this.ch===']') {
                 this.next(']')
+                this.stack.pop()
                 return array
             }
             this.next(',')
@@ -670,6 +762,8 @@ export default class Parser
             this.next('}')
             return object
         }
+        const frame = { container: object, key: null }
+        this.stack.push(frame)
         while(this.ch) {
             key = this.string()
             if (key==='__proto__') {
@@ -677,12 +771,17 @@ export default class Parser
             }
             this.whitespace()
             this.next(':')
+            frame.key = key
             val = this.value()
+            if (isPathLink(val)) {
+                this.checkPathLink(val)
+            }
             object[key] = val
             this.checkUnresolved(val, object, key)
             this.whitespace()
             if (this.ch==='}') {
                 this.next('}')
+                this.stack.pop()
                 return object
             }
             this.next(',')
@@ -691,13 +790,19 @@ export default class Parser
         this.error("Input stopped early")
     }
 
-    value()
+    value(isRoot=false)
     {
         let tagOb, result, tagName;
         this.whitespace()
         if (this.ch==='<') {
             tagOb = this.tag()
             tagName = tagOb.tagName
+            if (!isKnownType(tagName)) {
+                this.error('Syntax error: unknown tagName '+tagName)
+            }
+            if (!isTagType(tagName)) {
+                this.error('Syntax error: cannot tag '+tagName+' values')
+            }
             this.whitespace()
         }
         switch(this.ch) {
@@ -705,7 +810,7 @@ export default class Parser
                 if (tagName && tagName!=='object') {
                     this.typeError(tagName, this.ch)
                 }
-                result = this.plainJSONContainer()
+                result = isRoot && tagOb ? this.plainJSONRemainder() : this.plainJSONContainer()
                 if (typeof result === 'undefined') {
                     result = this.object()
                 }
@@ -714,7 +819,7 @@ export default class Parser
                 if (tagName && tagName!=='array') {
                     this.typeError(tagName, this.ch)
                 }
-                result = this.plainJSONContainer()
+                result = isRoot && tagOb ? this.plainJSONRemainder() : this.plainJSONContainer()
                 if (typeof result === 'undefined') {
                     result = this.array()
                 }
@@ -744,6 +849,9 @@ export default class Parser
                         break
                     case 'number':
                         result = new Number(result)
+                        break
+                    case 'bigint':
+                        result = Object(result)
                         break
                     default:
                         this.error('Syntax Error: unexpected type '+(typeof result))
@@ -806,6 +914,65 @@ export default class Parser
         }
     }
 
+    /**
+     * Path links must point backward: to a value that is complete, or to a
+     * container that is still open (a cycle). This keeps JSONTag parsable in
+     * a single pass, e.g. by a streaming parser.
+     */
+    checkPathLink(link)
+    {
+        link = link.valueOf()
+        if (link==='#!') {
+            return
+        }
+        const stack = this.stack
+        let node = stack[0].container
+        const segments = pathSegments(link)
+        for (let i=0; i<segments.length; i++) {
+            const key = segments[i]
+            const frame = stack[i]
+            if (frame && frame.container===node && String(frame.key)===key && stack[i+1]) {
+                // a container that is still open
+                node = stack[i+1].container
+            } else if (node!==null && typeof node==='object' && !isPathLink(node)
+                && Object.prototype.hasOwnProperty.call(node, key)
+            ) {
+                // a complete value
+                node = node[key]
+            } else {
+                this.error('Syntax error: path link '+link+' does not point to an earlier value')
+            }
+        }
+    }
+
+    resolvePath(root, link)
+    {
+        if (link==='#!') {
+            return root
+        }
+        let node = root
+        for (const key of pathSegments(link)) {
+            if (node===null || typeof node!=='object' || isPathLink(node)
+                || !Object.prototype.hasOwnProperty.call(node, key)
+            ) {
+                this.error('Syntax error: cannot resolve path link '+link)
+            }
+            node = node[key]
+        }
+        return node
+    }
+
+    resolvePathLinks(root)
+    {
+        for (const { src, key, link } of this.pathLinks) {
+            // skip links that a reviver has replaced
+            if (src[key]===link) {
+                src[key] = this.resolvePath(root, link.valueOf())
+            }
+        }
+        this.pathLinks = []
+    }
+
     resolveLinks()
     {
         if (this.meta.index.id.size>this.meta.unresolved.size) {
@@ -838,10 +1005,12 @@ export default class Parser
         this.at = 0
         this.ch = " "
         this.input = input
+        this.pathLinks = []
+        this.stack = []
         if (!this.hasJSONTagOutsideString(input)) {
             return this.parsePlainJSON(input, reviver)
         }
-        const result = this.value()
+        const result = this.value(true)
         this.whitespace()
         if (this.ch) {
             this.error("Syntax error")
@@ -849,6 +1018,7 @@ export default class Parser
         if (typeof reviver == 'function') {
             this.walk({"":result}, "", reviver)
         }
+        this.resolvePathLinks(result)
         this.resolveLinks()
         return result
     }
