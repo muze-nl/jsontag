@@ -510,7 +510,7 @@ Since the point of JSONTag is to create a data interchange format, not primarily
 
 I've used the simplified ISO 8601 format as described in RFC 3339, since it allows for easy sorting and is already a widely used internet standard. In addition I've also allowed a human readable version of this format, without the T and Z markers. You can also skip the seconds part in the time, so instead of `<datetime>"2001-01-01T12:00:00Z"` this is also accepted: `<datetime>"2001-01-01 12:00"`.
 
-Years before 0 or after 9999 use the ISO 8601 expanded year format: a sign followed by at least four digits, e.g. `<datetime>"+010000-01-01T00:00:00.000Z"` or `<date>"-0001-01-01"`. A javascript `Date` writes such years with a sign and six digits, and can read them back. Negative years count astronomically: year `0000` is 1 BC, and `-0001` is 2 BC.
+Years before 0 or after 9999 use the ISO 8601 expanded year format: a sign followed by at least four digits, e.g. `<datetime>"+010000-01-01T00:00:00.000Z"` or `<date>"-0001-01-01"`. A javascript `Date` writes such years with a sign and six digits, and can read them back. Negative years count astronomically: year `0000` is 1 BC, and `-0001` is 2 BC. A negative year cannot be zero, so `-0000` is rejected.
 
 ### Decimal and Money
 

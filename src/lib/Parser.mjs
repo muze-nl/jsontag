@@ -89,9 +89,10 @@ export default class Parser
         duration: /^(-?)P(?=\d|T\d)(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)([DW]))?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/,
         phone: /^[+]?(?:\(\d+(?:\.\d+)?\)|\d+(?:\.\d+)?)(?:[ -]?(?:\(\d+(?:\.\d+)?\)|\d+(?:\.\d+)?))*(?:[ ]?(?:x|ext)\.?[ ]?\d{1,5})?$/,
         time: /^(\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?$/,
-        // years may have a sign and more than 4 digits, as in ISO 8601 expanded years, e.g. +010000 or -000001
-        date: /^[+-]?\d{4,}-([0][1-9]|[1][0-2])-([1-2][0-9]|[0][1-9]|[3][0-1])$/,
-        datetime: /^([+-]?\d{4,})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?Z?$/i, // RFC 3339 #5.6 allows lowercase z and t as well
+        // years have at least 4 digits, and may have a sign, as in ISO 8601 expanded years, e.g. +010000
+        // or -000001. A negative year must not be zero, e.g. -0000. No lookahead, so Rust can use the same.
+        date: /^(\+?\d{4,}|-(?:[1-9]\d{3,}|0[1-9]\d{2,}|00[1-9]\d+|000\d*[1-9]\d*))-([0][1-9]|[1][0-2])-([1-2][0-9]|[0][1-9]|[3][0-1])$/,
+        datetime: /^(\+?\d{4,}|-(?:[1-9]\d{3,}|0[1-9]\d{2,}|00[1-9]\d+|000\d*[1-9]\d*))-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?Z?$/i, // RFC 3339 #5.6 allows lowercase z and t as well
         range: /^\[-?(\d+\.)?\d+\,-?(\d+\.)?\d+\]$/
     }
 

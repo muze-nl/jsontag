@@ -70,7 +70,8 @@ upgrading.
 - `<date>` and `<datetime>` accept expanded years: a sign followed by at
   least four digits, e.g. `<datetime>"+010000-01-01T00:00:00.000Z"` or
   `<date>"-0001-01-01"`. A `Date` outside the years 0 to 9999 is written this
-  way, as `toISOString()` does.
+  way, as `toISOString()` does. A negative year cannot be zero, e.g. `-0000`,
+  as in ISO 8601.
 - `JSONTag.isZero(value)`, because typed numbers are parsed as wrapper
   objects, which are always truthy, even when their value is zero.
 - `JSONTag.quoteString`, `assertUnicode`, `formatNumber` and `isBigIntValue`,

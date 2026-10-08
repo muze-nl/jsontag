@@ -53,14 +53,18 @@ tap.test('date and datetime accept a sign and expanded years', t => {
 	const valid = [
 		'<date>"0999-01-01"', '<date>"0000-01-01"', '<date>"-0001-01-01"', '<date>"+10000-01-01"',
 		'<datetime>"0999-01-01T00:00:00Z"', '<datetime>"-000001-01-01T00:00:00.000Z"',
-		'<datetime>"+010000-01-01 12:00"'
+		'<datetime>"+010000-01-01 12:00"',
+		'<date>"+0000-01-01"', '<datetime>"+000000-01-01T00:00:00Z"',
+		'<date>"-0010-01-01"', '<date>"-0100-01-01"', '<date>"-1000-01-01"', '<date>"-00001-01-01"'
 	]
 	for (const text of valid) {
 		t.doesNotThrow(() => JSONTag.parse(text), text)
 	}
 	const invalid = [
 		'<date>"999-01-01"', '<date>"+-2020-01-01"', '<date>"2020-13-01"',
-		'<datetime>"999-01-01T00:00:00Z"', '<datetime>"--2020-01-01T00:00:00Z"', '<datetime>"2020-01-01"'
+		'<datetime>"999-01-01T00:00:00Z"', '<datetime>"--2020-01-01T00:00:00Z"', '<datetime>"2020-01-01"',
+		// minus zero is not a valid year in ISO 8601, and javascript cannot read it
+		'<date>"-0000-01-01"', '<date>"-00000-01-01"', '<datetime>"-000000-01-01T00:00:00Z"', '<datetime>"-0000-01-01 12:00"'
 	]
 	for (const text of invalid) {
 		t.throws(() => JSONTag.parse(text), text)
