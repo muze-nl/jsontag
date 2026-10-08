@@ -111,7 +111,21 @@ The baseURL value is used to parse and validate link and URL values. It will als
 
 > `JSONTag.stringify(value, replacer, space)`
 
-`JSONTag.stringify` works identically to [`JSON.stringify`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify). But in addition it also can stringify circular references and it will also codify any types or attributes set on values with the `setType` and `setAttribute` methods.
+`JSONTag.stringify` works identically to [`JSON.stringify`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify). But in addition it also can stringify repeated and circular references, see [Circular data, or references](#circular-data-or-references), and it will also codify any types or attributes set on values with the `setType` and `setAttribute` methods.
+
+As with `JSON.stringify`:
+
+- properties with the value `undefined`, a function or a symbol are skipped. In an array these values are written as `null`, so that the other values keep their index.
+- `toJSONTag(key)` or `toJSON(key)` is called first, if the value has one, and then the replacer.
+- strings, keys and attribute values must be valid Unicode. Javascript strings may contain unpaired UTF-16 surrogates, e.g. `"\uD800"`, but these cannot be encoded as UTF-8, and other languages, like Rust, reject them. So `stringify` throws a `TypeError` for them, instead of writing an escape like `"\ud800"`. Valid surrogate pairs, like `"\ud83d\ude00"`, are fine. The parser does accept unpaired surrogates.
+- attribute values are written as JSON strings, with the same escapes, e.g. `<object title="line\nbreak">{}`.
+- `space` adds at most 10 characters of indentation per level. A number below 1 means no indentation, and a string is cut to its first 10 characters. Unlike `JSON.stringify`, a `space` string may only contain spaces, tabs and newlines, otherwise `stringify` throws a `TypeError`, because the output could not be parsed.
+
+Javascript `Date` objects are written as `<datetime>`, e.g. `<datetime>"1970-01-01T00:00:00.000Z"`. An invalid date is written as `<datetime>null`. Other objects are written as normal objects, except `Map`, `Set`, `WeakMap` and `WeakSet`: these would lose all their contents, so `stringify` throws a `TypeError`. Convert them first, with a `toJSON()` method or a replacer.
+
+Typed numbers must fit their type, e.g. an `<int8>` must be an integer from -128 to 127. Otherwise `stringify` throws a `TypeError`, so it never writes values that the parser rejects. As with `JSON.stringify`, `NaN` and `Infinity` are written as `null`, but keep their type, e.g. `<float>null`.
+
+A `BigInt` is written as `<int64>`, or as `<uint64>` if it is larger than the int64 maximum. A `BigInt` that does not fit in 64 bits throws a `TypeError`. See [Integers and BigInt](#integers-and-bigint).
 
 ### getType
 
@@ -132,6 +146,8 @@ This will annotate the value as being of type `type`. Valid types are:
 `float`, `float32`, `float64`
 
 The canonical runtime list is available as `JSONTag.types`. The related `JSONTag.typeDefinitions` object records the JSON value kind expected for each type.
+
+The type must fit the value, otherwise `setType` throws a `TypeError`. E.g. a `String` object can only get a type whose value kind is `string`, like `date` or `email`, and an `Array` can only get the type `array`. A `Null` object can get any type. A `BigInt` object, created with `Object(5n)`, can get any of the integer types and `timestamp`.
 
 ### getAttribute
 
@@ -227,6 +243,16 @@ The list below is preliminary. The aim is to have a good coverage of most used o
 - int (uint, int8, uint8, int16, uint16, int32, uint32, int64, uint64)
 - float (float32, float64)
 
+#### Integers and BigInt
+
+`<int64>` and `<uint64>` values are parsed as a `BigInt` object, so that values larger than `Number.MAX_SAFE_INTEGER` (2^53-1) keep their exact value. `<timestamp>` values are parsed as a `Number` object if they are a safe integer, which is enough for timestamps in seconds or milliseconds, and as a `BigInt` object otherwise, e.g. for timestamps in nanoseconds. The other integer types are parsed as a `Number` object.
+
+```javascript
+const value = JSONTag.parse('<int64>9223372036854775807')
+value.valueOf() // 9223372036854775807n
+JSONTag.getType(value) // 'int64'
+```
+
 ### Semantic types
 
 - color
@@ -261,7 +287,30 @@ One shortcoming of JSON is that it cannot represent data with internal reference
 }
 ```	
 
-When parsed the property `bar` is a reference to the parent object of that property. The current stringify implementation (javascript) automatically add `id` attributes and `link` values when a reference to a previous value is found.
+When parsed the property `bar` is a reference to the parent object of that property.
+
+`JSONTag.stringify` writes the first occurrence of an object or array in full. Each repeated occurrence is written as a link. If the object has an `id` attribute, the link uses that id. Otherwise the link is a path link: a [JSON Pointer](https://www.rfc-editor.org/rfc/rfc6901) to the first occurrence, prefixed with `#!`:
+
+```
+{
+	"foo":{
+		"bar":{
+			"name":"Bar",
+			"parent":<link>"#!/foo"
+		}
+	},
+	"list":[ <link>"#!/foo/bar" ],
+	"root":<link>"#!"
+}
+```
+
+`#!` is the root, `#!/foo/bar` is `root.foo.bar` and `#!/list/0` is the first item of `root.list`. A `/` in a key is written as `~1` and a `~` as `~0`.
+
+A path link must point backward: to a value earlier in the document, or to an object or array that contains the link. The parser rejects a path link to a value that comes later, so that a document can always be read in a single pass.
+
+Path links are local to the document they are in. The parser resolves them after the reviver has run, so a reviver sees the `<link>` value, just like with id links, and a path link resolves to the revived value.
+
+Because each object is written before any link to it, `stringify` does not need to inspect the data first, and does not change it: it never adds `id` attributes. Path links depend on the position of the object, so if you edit a document by hand, an `id` attribute and a link to that id is more robust.
 
 This allows for complex graphs to be serialized to JSONTag and revived correctly. The `<link>` type does not specify a specific format, other that a string. It is implied that the URL format is explicitly supported as the default.
 

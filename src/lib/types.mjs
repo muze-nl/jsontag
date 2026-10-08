@@ -50,6 +50,36 @@ export const jsonTypes = Object.freeze(valueTypes.filter(type => typeDefinitions
 export const stringTypes = Object.freeze(valueTypes.filter(type => typeDefinitions[type].valueKind==='string'))
 export const numberTypes = Object.freeze(valueTypes.filter(type => typeDefinitions[type].valueKind==='number'))
 
+const INT64 = Object.freeze([-(2n**63n), 2n**63n-1n])
+
+// [min, max] for each integer type, null means unbounded
+export const integerRanges = Object.freeze({
+    int: Object.freeze([null, null]),
+    int8: Object.freeze([-128n, 127n]),
+    int16: Object.freeze([-32768n, 32767n]),
+    int32: Object.freeze([-2147483648n, 2147483647n]),
+    int64: INT64,
+    uint: Object.freeze([0n, null]),
+    uint8: Object.freeze([0n, 255n]),
+    uint16: Object.freeze([0n, 65535n]),
+    uint32: Object.freeze([0n, 4294967295n]),
+    uint64: Object.freeze([0n, 2n**64n-1n]),
+    timestamp: INT64
+})
+
+// [min, max] for each float type, null means unbounded
+export const floatRanges = Object.freeze({
+    float: Object.freeze([null, null]),
+    float32: Object.freeze([-3.4e+38, 3.4e+38]),
+    float64: Object.freeze([-1.7e+308, 1.7e+308])
+})
+
+// works for Numbers and BigInts, and mixes of both
+export function inRange(value, [min, max])
+{
+    return (min===null || value>=min) && (max===null || value<=max)
+}
+
 export function getTypeDefinition(type)
 {
     return typeDefinitions[type]

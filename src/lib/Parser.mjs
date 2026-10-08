@@ -1,9 +1,10 @@
 // non streaming handbuilt jsontag parser
 import * as JSONTag from './functions.mjs'
 import Null from './Null.mjs'
-import { getTypeValueKind, isKnownType, isTagType } from './types.mjs'
+import { getTypeValueKind, isKnownType, isTagType, integerRanges, floatRanges, inRange } from './types.mjs'
 
 const STRING_SPECIAL = /["\\\u0000-\u001f]/g
+const SAFE_INTEGER_RANGE = [BigInt(Number.MIN_SAFE_INTEGER), BigInt(Number.MAX_SAFE_INTEGER)]
 
 function hexValue(code)
 {
@@ -24,6 +25,22 @@ function isWhitespace(code)
     return code===32 || code===10 || code===13 || code===9
 }
 
+function isPathLink(value)
+{
+    if (!(value instanceof String)) {
+        return false
+    }
+    const link = value.valueOf()
+    return link.charCodeAt(0)===35 && link.charCodeAt(1)===33 // "#!"
+        && (link.length===2 || link.charCodeAt(2)===47) // "#!" or "#!/..."
+}
+
+// "#!/a~1b/0" -> ["a/b", "0"]
+function pathSegments(link)
+{
+    return link.slice(3).split('/').map(segment => segment.replace(/~1/g, '/').replace(/~0/g, '~'))
+}
+
 function needsPrototypeValidation(input)
 {
     return input.indexOf('__proto__')!==-1 || input.indexOf('\\')!==-1
@@ -36,6 +53,9 @@ export default class Parser
     input
     context
     meta
+    pathLinks = []
+    // containers that are being parsed, outermost first: { container, key }
+    stack = []
 
     escapee = {
         '"': '"',
@@ -320,50 +340,15 @@ export default class Parser
             if (getTypeValueKind(tagName)!=='number') {
                 this.typeError(tagName,numString)
             }
-            switch(tagName) {
-                case "int":
-                    this.isInt(numString)
-                    break
-                case "uint":
-                    this.isInt(numString, [0,Infinity])
-                    break
-                case "int8":
-                    this.isInt(numString, [-128,127])
-                    break
-                case "uint8":
-                    this.isInt(numString, [0,255])
-                    break
-                case "int16":
-                    this.isInt(numString, [-32768,32767])
-                    break
-                case "uint16":
-                    this.isInt(numString, [0,65535])
-                    break
-                case "int32":
-                    this.isInt(numString, [-2147483648, 2147483647])
-                    break
-                case "uint32":
-                    this.isInt(numString, [0,4294967295])
-                    break
-                case "timestamp":
-                case "int64":
-                    this.isBigInt(numString, [BigInt("-9223372036854775808"),BigInt("9223372036854775807")])
-                    break
-                case "uint64":
-                    this.isBigInt(numString, [0,BigInt("18446744073709551615")])
-                    break
-                case "float":
-                    this.isFloat(numString)
-                    break
-                case "float32":
-                    this.isFloat(numString, [-3.4e+38,3.4e+38])
-                    break
-                case "float64":
-                    this.isFloat(numString, [-1.7e+308,+1.7e+308])
-                    break
-                case "number":
-                    //FIXME: what to check? should already be covered by JSON parsing rules?
-                    break
+            if (tagName==='int64' || tagName==='uint64' || tagName==='timestamp') {
+                result = this.isBigInt(numString, integerRanges[tagName])
+                if (tagName==='timestamp' && inRange(result, SAFE_INTEGER_RANGE)) {
+                    result = Number(result)
+                }
+            } else if (integerRanges[tagName]) {
+                this.isInt(numString, integerRanges[tagName])
+            } else if (floatRanges[tagName]) {
+                this.isFloat(numString, floatRanges[tagName])
             }
         }
         return result        
@@ -383,39 +368,27 @@ export default class Parser
         if (!Number.isFinite(test.valueOf())) {
             this.error('Syntax Error: expected float value')
         }
-        if (range) {
-            if (typeof range[0] === 'number') {
-                if (test<range[0]) {
-                    this.error('Syntax Error: float value out of range')
-                }
-            }
-            if (typeof range[1] === 'number') {
-                if (test>range[1]) {
-                    this.error('Syntax Error: float value out of range')    
-                }
-            }
+        if (range && !inRange(test.valueOf(), range)) {
+            this.error('Syntax Error: float value out of range')
         }
     }
 
     isBigInt(int, range)
     {
-        let test = BigInt(int)
+        let test
+        try {
+            test = BigInt(int)
+        } catch {
+            this.error('Syntax Error: expected integer value')
+        }
         let str = test.toString()
         if (int!==str) {
             this.error('Syntax Error: expected integer value')
         }
-        if (range) {
-            if (typeof range[0] === 'number' || typeof range[0] === 'bigint') {
-                if (test<range[0]) {
-                    this.error('Syntax Error: integer value out of range')
-                }
-            }
-            if (typeof range[1] === 'number' || typeof range[1] === 'bigint') {
-                if (test>range[1]) {
-                    this.error('Syntax Error: integer value out of range')    
-                }
-            }
+        if (range && !inRange(test.valueOf(), range)) {
+            this.error('Syntax Error: integer value out of range')
         }
+        return test
     }
 
     isInt(int, range)
@@ -425,17 +398,8 @@ export default class Parser
         if (int!==str) {
             this.error('Syntax Error: expected integer value')
         }
-        if (range) {
-            if (typeof range[0] === 'number') {
-                if (test<range[0]) {
-                    this.error('Syntax Error: integer value out of range')
-                }
-            }
-            if (typeof range[1] === 'number') {
-                if (test>range[1]) {
-                    this.error('Syntax Error: integer value out of range')    
-                }
-            }
+        if (range && !inRange(test.valueOf(), range)) {
+            this.error('Syntax Error: integer value out of range')
         }
     }
 
@@ -673,6 +637,11 @@ export default class Parser
     checkUnresolved(item, object, key)
     {
         if (JSONTag.getType(item)==='link') {
+            if (isPathLink(item)) {
+                // path links are local to this document, see resolvePathLinks()
+                this.pathLinks.push({ src: object, key, link: item })
+                return
+            }
             let link = ''+item
             let links = this.meta.unresolved.get(link)
             if (typeof links === 'undefined') {
@@ -717,13 +686,20 @@ export default class Parser
             this.next(']')
             return array
         }
+        const frame = { container: array, key: 0 }
+        this.stack.push(frame)
         while(this.ch) {
+            frame.key = array.length
             item = this.value()
+            if (isPathLink(item)) {
+                this.checkPathLink(item)
+            }
             this.checkUnresolved(item, array, array.length)
             array.push(item)
             this.whitespace()
             if (this.ch===']') {
                 this.next(']')
+                this.stack.pop()
                 return array
             }
             this.next(',')
@@ -744,6 +720,8 @@ export default class Parser
             this.next('}')
             return object
         }
+        const frame = { container: object, key: null }
+        this.stack.push(frame)
         while(this.ch) {
             key = this.string()
             if (key==='__proto__') {
@@ -751,12 +729,17 @@ export default class Parser
             }
             this.whitespace()
             this.next(':')
+            frame.key = key
             val = this.value()
+            if (isPathLink(val)) {
+                this.checkPathLink(val)
+            }
             object[key] = val
             this.checkUnresolved(val, object, key)
             this.whitespace()
             if (this.ch==='}') {
                 this.next('}')
+                this.stack.pop()
                 return object
             }
             this.next(',')
@@ -825,6 +808,9 @@ export default class Parser
                     case 'number':
                         result = new Number(result)
                         break
+                    case 'bigint':
+                        result = Object(result)
+                        break
                     default:
                         this.error('Syntax Error: unexpected type '+(typeof result))
                         break
@@ -886,6 +872,65 @@ export default class Parser
         }
     }
 
+    /**
+     * Path links must point backward: to a value that is complete, or to a
+     * container that is still open (a cycle). This keeps JSONTag parsable in
+     * a single pass, e.g. by a streaming parser.
+     */
+    checkPathLink(link)
+    {
+        link = link.valueOf()
+        if (link==='#!') {
+            return
+        }
+        const stack = this.stack
+        let node = stack[0].container
+        const segments = pathSegments(link)
+        for (let i=0; i<segments.length; i++) {
+            const key = segments[i]
+            const frame = stack[i]
+            if (frame && frame.container===node && String(frame.key)===key && stack[i+1]) {
+                // a container that is still open
+                node = stack[i+1].container
+            } else if (node!==null && typeof node==='object' && !isPathLink(node)
+                && Object.prototype.hasOwnProperty.call(node, key)
+            ) {
+                // a complete value
+                node = node[key]
+            } else {
+                this.error('Syntax error: path link '+link+' does not point to an earlier value')
+            }
+        }
+    }
+
+    resolvePath(root, link)
+    {
+        if (link==='#!') {
+            return root
+        }
+        let node = root
+        for (const key of pathSegments(link)) {
+            if (node===null || typeof node!=='object' || isPathLink(node)
+                || !Object.prototype.hasOwnProperty.call(node, key)
+            ) {
+                this.error('Syntax error: cannot resolve path link '+link)
+            }
+            node = node[key]
+        }
+        return node
+    }
+
+    resolvePathLinks(root)
+    {
+        for (const { src, key, link } of this.pathLinks) {
+            // skip links that a reviver has replaced
+            if (src[key]===link) {
+                src[key] = this.resolvePath(root, link.valueOf())
+            }
+        }
+        this.pathLinks = []
+    }
+
     resolveLinks()
     {
         if (this.meta.index.id.size>this.meta.unresolved.size) {
@@ -918,6 +963,8 @@ export default class Parser
         this.at = 0
         this.ch = " "
         this.input = input
+        this.pathLinks = []
+        this.stack = []
         if (!this.hasJSONTagOutsideString(input)) {
             return this.parsePlainJSON(input, reviver)
         }
@@ -929,6 +976,7 @@ export default class Parser
         if (typeof reviver == 'function') {
             this.walk({"":result}, "", reviver)
         }
+        this.resolvePathLinks(result)
         this.resolveLinks()
         return result
     }
