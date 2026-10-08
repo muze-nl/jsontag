@@ -51,15 +51,17 @@ export const stringTypes = Object.freeze(valueTypes.filter(type => typeDefinitio
 export const numberTypes = Object.freeze(valueTypes.filter(type => typeDefinitions[type].valueKind==='number'))
 
 const INT64 = Object.freeze([-(2n**63n), 2n**63n-1n])
+// int and uint are parsed as a Number, so they must be safe integers
+const SAFE = 2n**53n-1n
 
 // [min, max] for each integer type, null means unbounded
 export const integerRanges = Object.freeze({
-    int: Object.freeze([null, null]),
+    int: Object.freeze([-SAFE, SAFE]),
     int8: Object.freeze([-128n, 127n]),
     int16: Object.freeze([-32768n, 32767n]),
     int32: Object.freeze([-2147483648n, 2147483647n]),
     int64: INT64,
-    uint: Object.freeze([0n, null]),
+    uint: Object.freeze([0n, SAFE]),
     uint8: Object.freeze([0n, 255n]),
     uint16: Object.freeze([0n, 65535n]),
     uint32: Object.freeze([0n, 4294967295n]),

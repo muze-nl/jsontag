@@ -32,9 +32,39 @@ tap.test('invalid Date is stringified as datetime null', t => {
 	t.end()
 })
 
-tap.test('Date outside of the datetime range throws', t => {
-	t.throws(() => JSONTag.stringify(new Date('+010000-01-01T00:00:00Z')), TypeError)
-	t.throws(() => JSONTag.stringify(new Date('-000001-01-01T00:00:00Z')), TypeError)
+tap.test('Date with an expanded year round trips', t => {
+	const dates = {
+		'+010000-01-01T00:00:00.000Z': new Date('+010000-01-01T00:00:00Z'),
+		'-000001-01-01T00:00:00.000Z': new Date('-000001-01-01T00:00:00Z'),
+		'0000-01-01T00:00:00.000Z': new Date('0000-01-01T00:00:00Z'),
+		// the javascript Date range
+		'+275760-09-13T00:00:00.000Z': new Date(8.64e15),
+		'-271821-04-20T00:00:00.000Z': new Date(-8.64e15)
+	}
+	for (const [iso, date] of Object.entries(dates)) {
+		const s = JSONTag.stringify(date)
+		t.equal(s, '<datetime>"'+iso+'"')
+		t.equal(new Date(JSONTag.parse(s)).getTime(), date.getTime(), iso)
+	}
+	t.end()
+})
+
+tap.test('date and datetime accept a sign and expanded years', t => {
+	const valid = [
+		'<date>"0999-01-01"', '<date>"0000-01-01"', '<date>"-0001-01-01"', '<date>"+10000-01-01"',
+		'<datetime>"0999-01-01T00:00:00Z"', '<datetime>"-000001-01-01T00:00:00.000Z"',
+		'<datetime>"+010000-01-01 12:00"'
+	]
+	for (const text of valid) {
+		t.doesNotThrow(() => JSONTag.parse(text), text)
+	}
+	const invalid = [
+		'<date>"999-01-01"', '<date>"+-2020-01-01"', '<date>"2020-13-01"',
+		'<datetime>"999-01-01T00:00:00Z"', '<datetime>"--2020-01-01T00:00:00Z"', '<datetime>"2020-01-01"'
+	]
+	for (const text of invalid) {
+		t.throws(() => JSONTag.parse(text), text)
+	}
 	t.end()
 })
 
@@ -214,17 +244,18 @@ tap.test('typed numbers in range', t => {
 	t.end()
 })
 
-tap.test('typed Number as int64 parses to the same value', t => {
-	const s = JSONTag.stringify(typedNumber(2**60, 'int64'))
-	t.equal(s, '<int64>1152921504606846976')
-	t.equal(JSONTag.parse(s).valueOf(), 2n**60n)
+tap.test('typed Number as int64 must be a safe integer', t => {
+	const s = JSONTag.stringify(typedNumber(2**53-1, 'int64'))
+	t.equal(s, '<int64>9007199254740991')
+	t.equal(JSONTag.parse(s).valueOf(), 2n**53n-1n)
+	// may have lost precision already, use a BigInt instead
+	t.throws(() => JSONTag.stringify(typedNumber(2**60, 'int64')), TypeError)
 	t.end()
 })
 
-tap.test('typed Number as int keeps the shortest form, which parses to the same Number', t => {
-	const s = JSONTag.stringify(typedNumber(2**60, 'int'))
-	t.equal(s, '<int>1152921504606847000')
-	t.equal(JSONTag.parse(s).valueOf(), 2**60)
+tap.test('typed Number as int must be a safe integer', t => {
+	t.throws(() => JSONTag.stringify(typedNumber(2**60, 'int')), TypeError)
+	t.throws(() => JSONTag.stringify(typedNumber(2**53, 'int')), TypeError)
 	t.end()
 })
 

@@ -4,7 +4,7 @@ JSON has won the battle for universal data interchange format. There are still s
 
 However, JSON has a problem. It is too restricted. There are too few basic data types. This means that if you do need to specify a specific data type, like `Date`, you must go out of your way to either define a JSON Schema, or, another external definition, like JSON-LD does. This leads to unnecessary complexity.
 
-Instead of creating another Something-in-JSON format, JSONTag enhances the JSON format with additional type information inline. Every JSON file is valid JSONTag. Every JSONTag file can be easily stripped of type information to get valid JSON.
+Instead of creating another Something-in-JSON format, JSONTag enhances the JSON format with additional type information inline. Every JSON file is valid JSONTag, except for integers larger than 2^53, see [Integers and BigInt](#integers-and-bigint). Every JSONTag file can be easily stripped of type information to get valid JSON.
 
 JSONTag looks like this:
 ```
@@ -224,6 +224,27 @@ if (JSONTag.isNull(p)) {
 }
 ```
 
+### isZero
+
+> `JSONTag.isZero(value)`
+
+Returns `true` for `0`, `-0` and `0n`, also when wrapped in an object. Typed numbers are parsed as `Number` or `BigInt` objects, and objects are always truthy, even when their value is zero. So `if (value)` does not work for typed numbers, use `JSONTag.isZero(value)` instead.
+
+```javascript
+const zero = JSONTag.parse('<int64>0')
+Boolean(zero)          // true
+JSONTag.isZero(zero)   // true
+```
+
+### Helpers for other serializers
+
+These functions write values the same way `stringify` does, and throw a `TypeError` for the same values. They are meant for other serializers, like od-jsontag, so that they write the same JSONTag.
+
+- `JSONTag.quoteString(string)` returns the string as a JSON string literal. It throws if the string contains an unpaired UTF-16 surrogate.
+- `JSONTag.assertUnicode(string)` returns the string, or throws if it contains an unpaired UTF-16 surrogate.
+- `JSONTag.formatNumber(value, type)` returns the text of a number or BigInt, for the given type, without the tag. It throws if the value does not fit the type, or if it is an untyped integer larger than 2^53.
+- `JSONTag.isBigIntValue(value)` returns `true` for a BigInt, or a BigInt object.
+
 
 ## JSONTag Types
 
@@ -245,7 +266,9 @@ The list below is preliminary. The aim is to have a good coverage of most used o
 
 #### Integers and BigInt
 
-`<int64>` and `<uint64>` values are parsed as a `BigInt` object, so that values larger than `Number.MAX_SAFE_INTEGER` (2^53-1) keep their exact value. `<timestamp>` values are parsed as a `Number` object if they are a safe integer, which is enough for timestamps in seconds or milliseconds, and as a `BigInt` object otherwise, e.g. for timestamps in nanoseconds. The other integer types are parsed as a `Number` object.
+`<int64>` and `<uint64>` values are parsed as a `BigInt` object, so that values larger than `Number.MAX_SAFE_INTEGER` (2^53-1) keep their exact value. `<timestamp>` values are parsed as a `Number` object if they are a safe integer, which is enough for timestamps in seconds or milliseconds, and as a `BigInt` object otherwise, e.g. for timestamps in nanoseconds. The other integer types are parsed as a `Number` object, so `<int>` and `<uint>` must be safe integers, from -(2^53-1) to 2^53-1.
+
+Untyped integers, and `<number>` values, larger than 2^53 are rejected by the parser, e.g. `{"id":9007199254740993}`. As a javascript Number they would silently lose precision. Use `<int64>` or `<uint64>` for these, or a float type, like `<float64>6.022e+23`, if precision is not important. This applies to every number that is a whole number, so also to large floats like `1e300` without a float type. `stringify` throws a `TypeError` for these Numbers as well, write a `BigInt` instead, or set a float type. A `Number` with type `int64`, `uint64` or `timestamp` must also be a safe integer.
 
 ```javascript
 const value = JSONTag.parse('<int64>9223372036854775807')
@@ -272,7 +295,7 @@ JSONTag.getType(value) // 'int64'
 
 ## Boolean values
 
-JSONTag supports only direct boolean false and true. You cannot set a tag or add attributes to them. This is because it is impossible in javascript to create an object that evaluates to false. Even `new Boolean(false)` evaluates to `true`. There is simply no way to add metadata to a specific `false` value.
+JSONTag supports only direct boolean false and true. You cannot set a tag or add attributes to them. This is because it is impossible in javascript to create an object that evaluates to false. Even `new Boolean(false)` evaluates to `true`. There is simply no way to add metadata to a specific `false` value. `stringify` throws a `TypeError` for a `Boolean` object with attributes.
 
 ## Circular data, or references
 
@@ -486,6 +509,8 @@ The `<link>` value is explicitly designed to support Linked Data later on.
 Since the point of JSONTag is to create a data interchange format, not primarily a human readable format, I've opted to force all date related types to use universal time (GMT). Adding timezones creates the possibility of confusion and errors. Each client parsing the JSONTag data should apply timezones if needed.
 
 I've used the simplified ISO 8601 format as described in RFC 3339, since it allows for easy sorting and is already a widely used internet standard. In addition I've also allowed a human readable version of this format, without the T and Z markers. You can also skip the seconds part in the time, so instead of `<datetime>"2001-01-01T12:00:00Z"` this is also accepted: `<datetime>"2001-01-01 12:00"`.
+
+Years before 0 or after 9999 use the ISO 8601 expanded year format: a sign followed by at least four digits, e.g. `<datetime>"+010000-01-01T00:00:00.000Z"` or `<date>"-0001-01-01"`. A javascript `Date` writes such years with a sign and six digits, and can read them back. Negative years count astronomically: year `0000` is 1 BC, and `-0001` is 2 BC.
 
 ### Decimal and Money
 

@@ -35,6 +35,12 @@ globalThis.JSONTag = {
     isNull: attr.isNull,
     clone: attr.clone,
 
+    isZero: attr.isZero,
+    isBigIntValue: attr.isBigIntValue,
+    assertUnicode: attr.assertUnicode,
+    quoteString: attr.quoteString,
+    formatNumber: attr.formatNumber,
+
     Link,
     Null
 }

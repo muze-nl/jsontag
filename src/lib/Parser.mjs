@@ -4,6 +4,16 @@ import Null from './Null.mjs'
 import { getTypeValueKind, isKnownType, isTagType, integerRanges, floatRanges, inRange } from './types.mjs'
 
 const STRING_SPECIAL = /["\\\u0000-\u001f]/g
+// a number literal may be an integer beyond 2^53 if it has 16 digits, or an
+// exponent. Two expressions, and \d written out 16 times instead of \d{16},
+// are much faster in V8.
+const SIXTEEN_DIGITS = /\d\d\d\d\d\d\d\d\d\d\d\d\d\d\d\d/
+const EXPONENT = /\d[eE]/
+
+function mayHaveLargeNumber(text)
+{
+    return SIXTEEN_DIGITS.test(text) || EXPONENT.test(text)
+}
 const SAFE_INTEGER_RANGE = [BigInt(Number.MIN_SAFE_INTEGER), BigInt(Number.MAX_SAFE_INTEGER)]
 
 function hexValue(code)
@@ -69,6 +79,7 @@ export default class Parser
     }
 
     regexes = {
+        hexColor: /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i,
         color: /^(rgb|hsl)a?\((\d+%?(deg|rad|grad|turn)?[,\s]+){2,3}[\s\/]*[\d\.]+%?\)$/i,
         email: /^[A-Za-z0-9_!#$%&'*+\/=?`{|}~^.-]+@[A-Za-z0-9.-]+$/,
         uuid:  /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/,
@@ -78,8 +89,9 @@ export default class Parser
         duration: /^(-?)P(?=\d|T\d)(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)([DW]))?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/,
         phone: /^[+]?(?:\(\d+(?:\.\d+)?\)|\d+(?:\.\d+)?)(?:[ -]?(?:\(\d+(?:\.\d+)?\)|\d+(?:\.\d+)?))*(?:[ ]?(?:x|ext)\.?[ ]?\d{1,5})?$/,
         time: /^(\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?$/,
-        date: /^-?[1-9][0-9]{3,}-([0][1-9]|[1][0-2])-([1-2][0-9]|[0][1-9]|[3][0-1])$/,
-        datetime: /^(\d{4,})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?Z?$/i, // RFC 3339 #5.6 allows lowercase z and t as well
+        // years may have a sign and more than 4 digits, as in ISO 8601 expanded years, e.g. +010000 or -000001
+        date: /^[+-]?\d{4,}-([0][1-9]|[1][0-2])-([1-2][0-9]|[0][1-9]|[3][0-1])$/,
+        datetime: /^([+-]?\d{4,})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?Z?$/i, // RFC 3339 #5.6 allows lowercase z and t as well
         range: /^\[-?(\d+\.)?\d+\,-?(\d+\.)?\d+\]$/
     }
 
@@ -149,6 +161,27 @@ export default class Parser
         }
     }
 
+    unsafeInteger(number)
+    {
+        this.error('Syntax error: '+number+' is an integer beyond 2^53 and may have lost precision, use <int64>, <uint64> or a float type')
+    }
+
+    /**
+     * Rejects integers beyond 2^53, see number()
+     */
+    validateNumbers(value)
+    {
+        if (typeof value === 'number') {
+            if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
+                this.unsafeInteger(value)
+            }
+        } else if (value && typeof value === 'object') {
+            for (const key of Object.keys(value)) {
+                this.validateNumbers(value[key])
+            }
+        }
+    }
+
     parsePlainJSON(input, reviver)
     {
         let result
@@ -159,6 +192,9 @@ export default class Parser
         }
         if (needsPrototypeValidation(input)) {
             this.validatePlainJSON(result)
+        }
+        if (mayHaveLargeNumber(input)) {
+            this.validateNumbers(result)
         }
         if (typeof reviver == 'function') {
             this.walk({"":result}, "", reviver)
@@ -243,6 +279,9 @@ export default class Parser
         if (needsPrototypeValidation(json)) {
             this.validatePlainJSON(value)
         }
+        if (mayHaveLargeNumber(json)) {
+            this.validateNumbers(value)
+        }
         this.ch = this.input.charAt(end)
         this.at = end+1
         return value
@@ -259,6 +298,9 @@ export default class Parser
         }
         if (needsPrototypeValidation(json)) {
             this.validatePlainJSON(value)
+        }
+        if (mayHaveLargeNumber(json)) {
+            this.validateNumbers(value)
         }
         this.ch = ''
         this.at = this.input.length+1
@@ -351,6 +393,9 @@ export default class Parser
                 this.isFloat(numString, floatRanges[tagName])
             }
         }
+        if ((!tagName || tagName==='number') && !Number.isSafeInteger(result) && Number.isInteger(result)) {
+            this.unsafeInteger(numString)
+        }
         return result        
     }
 
@@ -407,11 +452,7 @@ export default class Parser
     {
         let result = false
         if (color.charAt(0) === "#") {
-            color = color.substring(1)
-            result = ([3, 4, 6, 8].indexOf(color.length) > -1) && !isNaN(parseInt(color, 16))
-            if (result.toString(16)!==color) {
-                this.typeError('color', color)
-            }
+            result = this.regexes.hexColor.test(color)
         } else {
             result = this.regexes.color.test(color)
         }

@@ -121,13 +121,13 @@ tap.test('BigInt object out of range for its type throws', t => {
 	t.end()
 })
 
-tap.test('BigInt object as int must be exact as a Number', t => {
-	const exact = Object(2n**53n)
-	JSONTag.setType(exact, 'int')
-	t.equal(JSONTag.stringify(exact), '<int>9007199254740992')
-	const inexact = Object(2n**53n+1n)
-	JSONTag.setType(inexact, 'int')
-	t.throws(() => JSONTag.stringify(inexact), TypeError)
+tap.test('BigInt object as int must be a safe integer', t => {
+	const safe = Object(2n**53n-1n)
+	JSONTag.setType(safe, 'int')
+	t.equal(JSONTag.stringify(safe), '<int>9007199254740991')
+	const unsafe = Object(2n**53n)
+	JSONTag.setType(unsafe, 'int')
+	t.throws(() => JSONTag.stringify(unsafe), TypeError)
 	t.end()
 })
 

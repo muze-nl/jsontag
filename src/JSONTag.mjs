@@ -39,6 +39,12 @@ export default class JSONTag
         JSONTag.isNull = attr.isNull
         JSONTag.clone  = attr.clone
 
+        JSONTag.isZero         = attr.isZero
+        JSONTag.isBigIntValue  = attr.isBigIntValue
+        JSONTag.assertUnicode  = attr.assertUnicode
+        JSONTag.quoteString    = attr.quoteString
+        JSONTag.formatNumber   = attr.formatNumber
+
         JSONTag.Link = Link
         JSONTag.Null = Null
 

@@ -36,56 +36,104 @@ const isWellFormed = typeof String.prototype.isWellFormed === 'function'
     : (string) => !/\p{Cs}/u.test(string)
 
 /**
- * Returns the string as JSON string literal, throws if it is not valid Unicode
+ * Returns the string, throws if it is not valid Unicode
  */
-const quote = (string) => {
+export const assertUnicode = (string) => {
+    if (typeof string !== 'string') {
+        throw new TypeError('JSONTag expected a string')
+    }
     if (!isWellFormed(string)) {
         throw new TypeError('JSONTag cannot stringify '+jsonStringify(string)+', it contains an unpaired UTF-16 surrogate')
     }
-    return jsonStringify(string)
+    return string
 }
 
 /**
- * Throws if the BigInt cannot be written with the given type, so that
- * stringify never writes integers that the parser rejects.
+ * Returns the string as JSON string literal, throws if it is not valid Unicode
  */
-function checkBigInt(big, type) {
-    if (type==='bigint') {
-        throw new TypeError('JSONTag cannot stringify BigInt '+big+', it does not fit in int64 or uint64')
+export const quoteString = (string) => jsonStringify(assertUnicode(string))
+
+const numberValueOf = Number.prototype.valueOf
+const bigIntValueOf = BigInt.prototype.valueOf
+
+/**
+ * Returns the primitive number or bigint of a number, a BigInt, or their
+ * wrapper objects, also from another realm. Returns undefined otherwise.
+ */
+function numericValue(value) {
+    if (typeof value === 'number' || typeof value === 'bigint') {
+        return value
     }
-    if (!inRange(big, integerRanges[type])) {
-        throw new TypeError('JSONTag cannot stringify BigInt '+big+', it is out of range for '+type)
+    if (!value || typeof value !== 'object') {
+        return undefined
     }
-    // int and uint values are parsed as a Number, so they must be exact
-    if ((type==='int' || type==='uint') && String(Number(big))!==big.toString()) {
-        throw new TypeError('JSONTag cannot stringify BigInt '+big+' as '+type+', it is not exact as a Number')
+    try {
+        return numberValueOf.call(value)
+    } catch {
+        // not a Number
     }
+    try {
+        return bigIntValueOf.call(value)
+    } catch {
+        // not a BigInt
+    }
+    return undefined
 }
 
 /**
- * Throws if the number cannot be written with the given type, so that
- * stringify never writes numbers that the parser rejects.
+ * Returns true for a bigint, or a BigInt object
  */
-function checkNumber(number, type) {
+export const isBigIntValue = (value) => typeof numericValue(value) === 'bigint'
+
+/**
+ * Returns true for 0, -0 and 0n, also as wrapper object. Typed numbers are
+ * parsed as wrapper objects, which are always truthy, even for zero.
+ */
+export const isZero = (value) => {
+    const number = numericValue(value)
+    return number === 0 || number === 0n
+}
+
+/**
+ * Returns the JSONTag text of a number or BigInt, without its tag. Throws if
+ * the value cannot be written with the given type, so that stringify never
+ * writes numbers that the parser, or other implementations, reject.
+ */
+export const formatNumber = (value, type = getType(value)) => {
+    const number = numericValue(value)
+    if (typeof number === 'bigint') {
+        if (!integerRanges[type]) {
+            throw new TypeError('JSONTag cannot stringify BigInt '+number
+                + (type==='bigint' ? ', it does not fit in int64 or uint64' : ' as '+type))
+        }
+        if (!inRange(number, integerRanges[type])) {
+            throw new TypeError('JSONTag cannot stringify BigInt '+number+', it is out of range for '+type)
+        }
+        return number.toString()
+    }
+    if (typeof number !== 'number') {
+        throw new TypeError('JSONTag expected a number or BigInt')
+    }
     if (!Number.isFinite(number)) {
-        // written as null, like JSON.stringify does
-        return
+        // as JSON.stringify
+        return 'null'
     }
     if (integerRanges[type]) {
-        // integers must be written without exponent
-        if (!Number.isInteger(number) || Math.abs(number)>=1e21) {
-            throw new TypeError('JSONTag cannot stringify '+number+' as '+type+', it is not an integer')
+        if (!Number.isSafeInteger(number)) {
+            throw new TypeError('JSONTag cannot stringify '+number+' as '+type+', it is not a safe integer, use a BigInt for larger integers')
         }
-        if (!inRange(BigInt(number), integerRanges[type])) {
+        if (!inRange(number, integerRanges[type])) {
             throw new TypeError('JSONTag cannot stringify '+number+', it is out of range for '+type)
         }
-    } else if (floatRanges[type] && !inRange(number, floatRanges[type])) {
-        throw new TypeError('JSONTag cannot stringify '+number+', it is out of range for '+type)
+    } else if (floatRanges[type]) {
+        if (!inRange(number, floatRanges[type])) {
+            throw new TypeError('JSONTag cannot stringify '+number+', it is out of range for '+type)
+        }
+    } else if (Number.isInteger(number) && !Number.isSafeInteger(number)) {
+        throw new TypeError('JSONTag cannot stringify '+number+', integers beyond 2^53 may have lost precision, use a BigInt or a float type')
     }
+    return jsonStringify(number)
 }
-
-// number types that the parser returns as a BigInt, if needed
-const bigIntTypes = [ 'int64', 'uint64', 'timestamp' ]
 
 /**
  * Throws for objects that would lose all their data when written as an object
@@ -102,8 +150,6 @@ export const stringify = (value, replacer=null, space="") => {
 
     // container -> path node of its first occurrence: { parent, key }
     const paths = new WeakMap()
-    // path node of the container currently being written
-    let current = null
 
     let indent = ""
     let gap = ""
@@ -145,14 +191,15 @@ export const stringify = (value, replacer=null, space="") => {
         return "\n"+gap + parts.join(",\n"+gap) + "\n"+mind
     }
 
-    const encodeProperties = (obj) => {
+    // node is the path node of obj, the parent of its properties
+    const encodeProperties = (obj, node) => {
         let mind = gap
         gap += indent
         const parts = []
         for (const prop of (propertyList ?? Object.keys(obj))) {
-            const encoded = str(prop, obj)
+            const encoded = str(prop, obj, node)
             if (encoded !== undefined) {
-                parts.push(quote(prop)+':'+encoded)
+                parts.push(quoteString(prop)+':'+encoded)
             }
         }
         const result = join(parts, mind)
@@ -160,12 +207,13 @@ export const stringify = (value, replacer=null, space="") => {
         return result
     }
 
-    const encodeEntries = (arr) => {
+    // node is the path node of arr, the parent of its entries
+    const encodeEntries = (arr, node) => {
         let mind = gap
         gap += indent
         const parts = []
         for (let i=0; i<arr.length; i++) {
-            const encoded = str(i, arr)
+            const encoded = str(i, arr, node)
             parts.push(encoded === undefined ? 'null' : encoded)
         }
         const result = join(parts, mind)
@@ -175,9 +223,10 @@ export const stringify = (value, replacer=null, space="") => {
 
     /**
      * Returns the JSONTag text for holder[key], or undefined if the value
-     * must be skipped: undefined, functions and symbols.
+     * must be skipped: undefined, functions and symbols. parent is the path
+     * node of holder, or null for the root.
      */
-    const str = (key, holder) => {
+    const str = (key, holder, parent) => {
         const original = holder[key]
         let value = original
         if (value instanceof Date) {
@@ -200,12 +249,13 @@ export const stringify = (value, replacer=null, space="") => {
             return 'null'
         }
         if (typeof value === 'bigint' || value instanceof BigInt) {
-            const type = getType(value)
-            checkBigInt(BigInt(value.valueOf()), type)
-            return getTypeString(value) + value.toString()
+            return getTypeString(value) + formatNumber(value, getType(value))
         }
         if (typeof value === 'string') {
-            return quote(value)
+            return quoteString(value)
+        }
+        if (typeof value === 'number') {
+            return formatNumber(value, 'number')
         }
         if (typeof value !== 'object') {
             return jsonStringify(value)
@@ -224,34 +274,25 @@ export const stringify = (value, replacer=null, space="") => {
                 first = paths.get(original)
             }
             if (first) {
-                return '<link>'+quote(getAttribute(value, 'id') ?? pointer(first))
+                return '<link>'+quoteString(getAttribute(value, 'id') ?? pointer(first))
             }
-            const node = { parent: current, key }
+            const node = { parent, key }
             paths.set(value, node)
             if (value === converted && original !== converted
                 && original && typeof original === 'object'
             ) {
                 paths.set(original, node)
             }
-            const saved = current
-            current = node
-            const result = getTypeString(value) + (isArray
-                ? '['+encodeEntries(value)+']'
-                : '{'+encodeProperties(value)+'}')
-            current = saved
-            return result
+            return getTypeString(value) + (isArray
+                ? '['+encodeEntries(value, node)+']'
+                : '{'+encodeProperties(value, node)+'}')
         }
         const type = getType(value)
         switch (getTypeValueKind(type)) {
             case 'string':
-                return getTypeString(value) + quote(''+value)
+                return getTypeString(value) + quoteString(''+value)
             case 'number':
-                checkNumber(value.valueOf(), type)
-                if (bigIntTypes.includes(type) && Number.isFinite(value.valueOf())) {
-                    // parsed as BigInt, so write the exact value, not the shortest form
-                    return getTypeString(value) + BigInt(value.valueOf()).toString()
-                }
-                return getTypeString(value) + jsonStringify(value)
+                return getTypeString(value) + formatNumber(value, type)
             case 'boolean':
                 return getTypeString(value) + jsonStringify(value)
             default:
@@ -259,7 +300,7 @@ export const stringify = (value, replacer=null, space="") => {
         }
     }
 
-    return str("", {"": value})
+    return str("", {"": value}, null)
 }
 
 /**
@@ -283,11 +324,8 @@ function dateToJSONTag(date) {
     if (isNaN(date.getTime())) {
         result = new Null()
     } else {
-        const iso = date.toISOString()
-        if (!/^\d{4}-/.test(iso)) {
-            throw new TypeError('JSONTag cannot stringify date '+iso+', years must be between 0 and 9999')
-        }
-        result = new String(iso)
+        // years outside 0 to 9999 are written as expanded years, e.g. +010000
+        result = new String(date.toISOString())
     }
     setType(result, 'datetime')
     setAttributes(result, getAttributes(date))
@@ -486,10 +524,13 @@ export const getAttributes = (obj) => {
 const formatAttributes = (attributes) => {
     return Object.entries(attributes)
         .map(([attr, attrValue]) => {
+            if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(attr)) {
+                throw new TypeError('JSONTag cannot stringify attribute name '+jsonStringify(attr)+', it must start with a letter, followed by letters, digits or _')
+            }
             if (Array.isArray(attrValue)) {
                 attrValue = attrValue.join(' ')
             }
-            return attr+'='+quote(attrValue)
+            return attr+'='+quoteString(attrValue)
         })
         .join(' ')
 }
@@ -502,6 +543,9 @@ export const getTypeString = (obj) => {
     let type = getType(obj)
     let attributes = getAttributes(obj)
     let attributesString = formatAttributes(attributes)
+    if (type === 'boolean' && attributesString) {
+        throw new TypeError('JSONTag cannot stringify attributes on a boolean, booleans cannot be tagged')
+    }
     if (!attributesString) {
         if (['object','array','string','number','boolean'].indexOf(type)!==-1) {
             type = ''
